@@ -1,0 +1,14 @@
+{
+  "layout_key": "mobile-titanium-noir",
+  "name": "Titanium Noir",
+  "category": "modern",
+  "ui_tokens": {
+    "page_bg": "#0a0a0c",
+    "shell_from": "#3f3f46",
+    "shell_to": "#09090b",
+    "header_bg": "#18181bcc",
+    "accent": "#d4d4d8",
+    "text_mode": "dark"
+  },
+  "preview_gradient": ["#52525b", "#a1a1aa", "#09090b"]
+}

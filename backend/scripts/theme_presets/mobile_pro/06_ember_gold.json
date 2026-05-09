@@ -1,0 +1,15 @@
+{
+  "layout_key": "mobile-ember-gold",
+  "name": "Ember Gold",
+  "category": "creative",
+  "ui_tokens": {
+    "page_bg": "#1f1006",
+    "shell_from": "#c2410c",
+    "shell_mid": "#7c2d12",
+    "shell_to": "#1c0703",
+    "header_bg": "#7c2110e6",
+    "accent": "#fde047",
+    "text_mode": "dark"
+  },
+  "preview_gradient": ["#ea580c", "#fbbf24", "#422006"]
+}

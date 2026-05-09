@@ -1,0 +1,14 @@
+{
+  "layout_key": "mobile-emerald-clinic",
+  "name": "Emerald Clinic",
+  "category": "healthcare",
+  "ui_tokens": {
+    "page_bg": "#03120a",
+    "shell_from": "#065f46",
+    "shell_to": "#022c22",
+    "header_bg": "#064e3bcc",
+    "accent": "#34d399",
+    "text_mode": "dark"
+  },
+  "preview_gradient": ["#047857", "#10b981", "#022c22"]
+}

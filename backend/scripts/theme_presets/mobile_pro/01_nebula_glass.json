@@ -1,0 +1,14 @@
+{
+  "layout_key": "mobile-nebula-glass",
+  "name": "Nebula Glass",
+  "category": "modern",
+  "ui_tokens": {
+    "page_bg": "#050814",
+    "shell_from": "#1e1b4b",
+    "shell_to": "#0b1020",
+    "header_bg": "#12102acc",
+    "accent": "#a78bfa",
+    "text_mode": "dark"
+  },
+  "preview_gradient": ["#312e81", "#6d28d9", "#0f172a"]
+}

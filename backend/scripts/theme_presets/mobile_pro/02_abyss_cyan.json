@@ -1,0 +1,14 @@
+{
+  "layout_key": "mobile-abyss-cyan",
+  "name": "Abyss Cyan",
+  "category": "professional",
+  "ui_tokens": {
+    "page_bg": "#020b14",
+    "shell_from": "#0c4a6e",
+    "shell_to": "#020617",
+    "header_bg": "#082f49cc",
+    "accent": "#22d3ee",
+    "text_mode": "dark"
+  },
+  "preview_gradient": ["#155e75", "#0891b2", "#0c1220"]
+}

@@ -1,0 +1,14 @@
+{
+  "layout_key": "mobile-velvet-rose",
+  "name": "Velvet Rose",
+  "category": "professional",
+  "ui_tokens": {
+    "page_bg": "#14050d",
+    "shell_from": "#4a044e",
+    "shell_to": "#1c0a12",
+    "header_bg": "#2d0a20cc",
+    "accent": "#f472b6",
+    "text_mode": "dark"
+  },
+  "preview_gradient": ["#86198f", "#be185d", "#1a0508"]
+}
