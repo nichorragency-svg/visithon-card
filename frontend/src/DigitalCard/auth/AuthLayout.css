@@ -1,0 +1,180 @@
+/* AuthLayout.css - Premium Dark Mode */
+
+.auth-wrapper {
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* Dark background from Image 12 */
+    background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+    font-family: 'Poppins', sans-serif;
+    padding: 20px;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 400px;
+    background: rgba(30, 41, 59, 0.7);
+    backdrop-filter: blur(10px); /* Glass effect */
+    padding: 40px 30px;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    text-align: center;
+}
+
+.auth-logo-section {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    /* Logo ko thora upar khinchne ke liye negative margin */
+    margin-top: -20px; 
+    /* Card ke sath fasla mazeed kam kar diya */
+    margin-bottom: 0px !important; 
+}
+
+.auth-logo-img {
+    /* 250 ke sath 'px' likhna zarori hy */
+    width: 230px; 
+    height: auto;
+    /* Image ke andar ki faltu space ko dabane ke liye */
+    max-height: 140px; 
+    object-fit: contain;
+    filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.3));
+    /* Image ke neeche ka fasla khatam karne ke liye */
+    margin-bottom: -15px; 
+}
+
+.auth-header h2 {
+    color: #ffffff;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    /* Heading ko logo ke kareeb lane ke liye */
+    margin-top: 0px !important; 
+    padding-top: 0px;
+}
+
+.auth-header p {
+    color: #94a3b8;
+    font-size: 14px;
+    /* Paragraph ke neeche ka fasla bhi set rakhein */
+    margin-bottom: 15px;
+}
+
+/* Error Message Fix */
+.auth-error-msg {
+    color: #fb7185;
+    background: rgba(251, 113, 133, 0.1);
+    padding: 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(251, 113, 133, 0.2);
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.auth-input-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.auth-input-group .input-icon {
+    position: absolute;
+    left: 15px;
+    color: #64748b;
+    font-size: 16px;
+}
+
+.auth-input-group input {
+    width: 100%;
+    padding: 14px 15px 14px 45px;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    color: white;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.auth-input-group input:focus {
+    outline: none;
+    border-color: #8b5cf6;
+    background: rgba(15, 23, 42, 0.8);
+    box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+}
+
+.password-toggle-icon {
+    position: absolute;
+    right: 15px;
+    cursor: pointer;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    z-index: 5;
+}
+
+/* Button with Gradient from Image 12 */
+.auth-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+    border: none;
+    border-radius: 14px;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    margin-top: 10px;
+}
+
+.auth-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px -5px rgba(139, 92, 246, 0.4);
+}
+
+.auth-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.forgot-password-link {
+    font-size: 13px;
+    color: #8b5cf6;
+    cursor: pointer;
+    margin-top: 5px;
+    font-weight: 500;
+}
+
+.forgot-password-link:hover {
+    text-decoration: underline;
+}
+
+.auth-footer {
+    margin-top: 30px;
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+.create-link {
+    color: #8b5cf6;
+    text-decoration: none;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.create-link:hover {
+    text-decoration: underline;
+}
