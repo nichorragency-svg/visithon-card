@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Route, Routes, Navigate } from 'react-router-dom';
+import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import SplashScreen from './components/SplashScreen';
 import CardDisplay from './card-display/CardDisplayView';
 import CardLogin from './auth/CardLogin';
@@ -27,6 +27,16 @@ import SavedCardsList from './pages/SavedCardsList';
 import { SUPABASE_CONFIGURED } from '../config';
 import { supabase } from '../supabase/client';
 import { refreshLocalUserInfoForSession } from '../supabase/supabaseWizard';
+
+/** Lets existing card holders open wizard again when coming from Edit (avoid redirect back to `/card/view`). */
+function WizardStep1Entry({ isCardAuthenticated, hasCard, profileUserId }) {
+  const location = useLocation();
+  const editMode =
+    location.state?.editMode === true || new URLSearchParams(location.search).get('edit') === '1';
+  if (!isCardAuthenticated) return <Navigate to="/card/login" replace />;
+  if (hasCard && !editMode) return <Navigate to={`/card/view/${profileUserId}`} replace />;
+  return <WizardStep1 />;
+}
 
 function MissingSupabase() {
   return (
@@ -125,9 +135,11 @@ const DigitalCardRoutesComp = () => {
       <Route
         path="wizard/step-1"
         element={
-          isCardAuthenticated ? hasCard ? <Navigate to={`/card/view/${userId}`} replace /> : <WizardStep1 /> : (
-            <Navigate to="/card/login" replace />
-          )
+          <WizardStep1Entry
+            isCardAuthenticated={isCardAuthenticated}
+            hasCard={hasCard}
+            profileUserId={userId}
+          />
         }
       />
 

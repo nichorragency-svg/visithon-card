@@ -92,7 +92,9 @@ export default function CardDisplayView() {
       try {
         const raw = localStorage.getItem('visithon_user_info');
         if (!raw) return false;
-        return JSON.parse(raw).id === userId;
+        const parsed = JSON.parse(raw);
+        const id = String(parsed?.id || parsed?._id || '').trim();
+        return id.length > 0 && id === String(userId || '').trim();
       } catch {
         return false;
       }
@@ -104,9 +106,6 @@ export default function CardDisplayView() {
   void walletTick;
   const isWalletSaved = userId ? isSavedCard(userId) : false;
   const walletSavedCount = getSavedCardCount();
-
-  /** Show Log out in ⋮ if we have a session/token OR this device is the card owner (local profile id matches URL). */
-  const canLogout = hasSessionOrToken || isOwner;
 
   const toggleWalletSave = () => {
     if (!userId) return;
@@ -183,7 +182,7 @@ export default function CardDisplayView() {
   const tileRowShowSave = !!showContacts;
   const tileRowShop = tileRowShopAsLink || tileRowShopAsWa;
   const tileRowShowActions =
-    tileRowShowSave || showWa || tileRowShowServices || tileRowShop || showWalletChrome;
+    tileRowShowSave || showWa || tileRowShop || showWalletChrome;
 
   const hasBusinessHours =
     user.business_hours &&
@@ -197,7 +196,6 @@ export default function CardDisplayView() {
     quickActionPalette,
     stSvTile,
     stWaTile,
-    stSvcTile,
     stShopTile,
     mainTextClass,
     cardBorderClass,
@@ -235,7 +233,6 @@ export default function CardDisplayView() {
             setMenuOpen={setMenuOpen}
             isOwner={isOwner}
             hasToken={hasToken}
-            canLogout={canLogout}
             isWalletSaved={isWalletSaved}
             onToggleWalletSave={toggleWalletSave}
             walletSavedCount={walletSavedCount}
@@ -283,15 +280,12 @@ export default function CardDisplayView() {
                 tileRowShowSave={tileRowShowSave}
                 showWa={showWa}
                 waDigits={waDigits}
-                tileRowShowServices={tileRowShowServices}
-                setServicesModalOpen={setServicesModalOpen}
                 tileRowShopAsLink={tileRowShopAsLink}
                 tileRowShopWebsite={tileRowShopWebsite}
                 tileRowShopAsWa={tileRowShopAsWa}
                 handleWhatsAppShop={handleWhatsAppShop}
                 stSvTile={stSvTile}
                 stWaTile={stWaTile}
-                stSvcTile={stSvcTile}
                 stShopTile={stShopTile}
                 tileInnerStyle={tileInnerStyle}
                 isLightTheme={isLightTheme}

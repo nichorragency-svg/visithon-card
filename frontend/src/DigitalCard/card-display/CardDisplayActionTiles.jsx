@@ -1,12 +1,5 @@
 import React from 'react';
-import {
-  FaAddressBook,
-  FaBookmark,
-  FaClipboardList,
-  FaIdCard,
-  FaShoppingBasket,
-  FaWhatsapp,
-} from 'react-icons/fa';
+import { FaAddressBook, FaBookmark, FaIdCard, FaShoppingBasket, FaWhatsapp } from 'react-icons/fa';
 import { triggerVCardDownload } from '../utils/downloadVCard';
 
 export function CardDisplayActionTiles({
@@ -20,15 +13,12 @@ export function CardDisplayActionTiles({
   tileRowShowSave,
   showWa,
   waDigits,
-  tileRowShowServices,
-  setServicesModalOpen,
   tileRowShopAsLink,
   tileRowShopWebsite,
   tileRowShopAsWa,
   handleWhatsAppShop,
   stSvTile,
   stWaTile,
-  stSvcTile,
   stShopTile,
   isLightTheme = false,
 }) {
@@ -65,18 +55,6 @@ export function CardDisplayActionTiles({
           >
             <FaWhatsapp className={stWaTile.icon} />
           </a>
-        )}
-
-        {/* Services */}
-        {tileRowShowServices && (
-          <button
-            type="button"
-            onClick={() => setServicesModalOpen(true)}
-            className={bareIconClass}
-            title="Services"
-          >
-            <FaClipboardList className={stSvcTile.icon} />
-          </button>
         )}
 
         {/* Shop (Link or WhatsApp) */}

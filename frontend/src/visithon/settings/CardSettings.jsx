@@ -61,7 +61,7 @@ export default function CardSettings() {
 
         <button
           type="button"
-          onClick={() => navigate('/card/wizard/step-1')}
+          onClick={() => navigate('/card/wizard/step-1?edit=1', { state: { editMode: true } })}
           className="flex w-full items-center gap-4 rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-4 text-left backdrop-blur-xl transition hover:border-violet-400/30 hover:bg-white/[0.09]"
         >
           <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-violet-400/30 bg-violet-500/15 text-violet-200">

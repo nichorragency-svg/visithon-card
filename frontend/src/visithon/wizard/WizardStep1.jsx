@@ -1,14 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { FaSearch } from 'react-icons/fa';
 import { apiErrorMessage } from '../../apiClient';
-import { getWizardState, patchStep1Profession } from '../../supabase/supabaseWizard';
+import { SUPABASE_CONFIGURED } from '../../config';
+import { supabase } from '../../supabase/client';
+import { getWizardState, patchStep1Profession, refreshLocalUserInfoForSession } from '../../supabase/supabaseWizard';
 import CustomButton from '../components/CustomButton';
 import GlassShell from '../components/GlassShell';
 import { STEP1_PROFESSIONS } from './constants';
 
 export default function WizardStep1() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const editModeFlag =
+    location.state?.editMode === true || new URLSearchParams(location.search).get('edit') === '1';
   const [query, setQuery] = useState('');
   const [profession, setProfession] = useState('');
   const [loading, setLoading] = useState(true);
@@ -16,43 +21,52 @@ export default function WizardStep1() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-  const token = localStorage.getItem('visithon_card_token');
-  if (!token) {
-    navigate('/card/login');
-    return;
-  }
+    let cancelled = false;
+    (async () => {
+      try {
+        const token = typeof localStorage !== 'undefined' ? localStorage.getItem('visithon_card_token') : null;
+        let authed = !!(token && String(token).trim());
+        if (!authed && SUPABASE_CONFIGURED && supabase) {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          authed = !!session?.access_token;
+          if (session?.access_token) {
+            await refreshLocalUserInfoForSession(session.access_token).catch(() => {});
+          }
+        }
+        if (!authed) {
+          navigate('/card/login');
+          return;
+        }
 
-  let cancelled = false;
-  (async () => {
-    try {
-      const data = await getWizardState();
-      if (cancelled) return;
+        const data = await getWizardState();
+        if (cancelled) return;
 
-      // Debugging k lye console check kren
-      console.log("Wizard State Data:", data);
+        // Published / completed wizard: open card unless user chose Edit (?edit=1 or navigation state).
+        if (
+          !editModeFlag &&
+          (data.wizard_completed === true || data.is_published === true)
+        ) {
+          const info = JSON.parse(localStorage.getItem('visithon_user_info') || '{}');
+          const vid = info.id || data.profile?._id;
 
-      // --- SAKHT CHECK ---
-      // Agar wizard mukammal hy, ya is_published true hy, toh redirect kren
-      if (data.wizard_completed === true || data.is_published === true) {
-        const info = JSON.parse(localStorage.getItem('visithon_user_info') || '{}');
-        const userId = info.id || data.profile?._id; // backup ID
-        
-        console.log("Redirecting to Card View...");
-        navigate(`/card/view/${userId}`);
-        return;
+          navigate(`/card/view/${vid}`);
+          return;
+        }
+
+        const saved = data.profile?.step1?.profession;
+        if (saved) setProfession(saved);
+      } catch (e) {
+        if (!cancelled) setError(apiErrorMessage(e, 'Could not load profile.'));
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-
-      const saved = data.profile?.step1?.profession;
-      if (saved) setProfession(saved);
-
-    } catch (e) {
-      if (!cancelled) setError(apiErrorMessage(e, 'Could not load profile.'));
-    } finally {
-      if (!cancelled) setLoading(false);
-    }
-  })();
-  return () => { cancelled = true; };
-}, [navigate]);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate, editModeFlag]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
