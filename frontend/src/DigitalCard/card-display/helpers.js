@@ -40,7 +40,7 @@ export function canonicalSocialUrl(platformKey, raw) {
         urlStr = `https://www.facebook.com/profile.php?id=${encodeURIComponent(s)}`;
         break;
       }
-      const idOnlyMatch = /\bid=(\d{8,20})\b/i.exec(s);
+      const idOnlyMatch = /\bid=(\d{5,40})\b/i.exec(s);
       if ((!/^https?:\/\//i.test(s) || !/\./.test(s)) && idOnlyMatch) {
         urlStr = `https://www.facebook.com/profile.php?id=${encodeURIComponent(idOnlyMatch[1])}`;
         break;
@@ -128,6 +128,12 @@ export function canonicalSocialUrl(platformKey, raw) {
 
     return urlStr;
   } catch {
+    if (
+      platformKey === 'facebook' &&
+      /\bfacebook\.com\b|\bfb\.(?:com|me)\b|\bm\.facebook\.com\b/i.test(trimmed.toLowerCase())
+    ) {
+      return withHttp(trimmed);
+    }
     return '';
   }
 }

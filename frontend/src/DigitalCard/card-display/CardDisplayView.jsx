@@ -177,8 +177,8 @@ export default function CardDisplayView() {
 
   const tileRowWaPhone = onlyDigits(user.whatsapp || user.phone1);
   const tileRowShopWebsite = (user.website || '').trim() ? withHttp(user.website) : '';
-  const tileRowSocialEntries =
-    showContacts && user.social ? sortSocialEntries(Object.entries(user.social)) : [];
+  /** Social URLs are intentional public links (step‑5); show even when phone/email hidden (step‑6). */
+  const tileRowSocialEntries = user.social ? sortSocialEntries(Object.entries(user.social)) : [];
   const tileRowShowServices = !!(user.services?.length > 0);
   const onboardingShopEnabled = user.shop_portfolio_enabled === true;
   const tileRowShopAsLink = onboardingShopEnabled && !!tileRowShopWebsite;

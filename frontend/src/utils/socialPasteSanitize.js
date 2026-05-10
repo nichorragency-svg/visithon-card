@@ -11,8 +11,10 @@ export function sanitizeSocialPaste(raw) {
     .replace(/\uFEFF/g, '')
     .replace(/[\u200B-\u200F\u2066-\u2069\u202A-\u202E]/g, '')
     .replace(/\uFF1F/g, '?')
+    .replace(/\u061F/g, '?')
     .replace(/\uFF1A/g, ':')
     .replace(/\uFF0F/g, '/')
     .replace(/\uFF06/g, '&')
+    .replace(/\s+/g, '')
     .trim();
 }
