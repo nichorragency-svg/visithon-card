@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaEdit, FaLayerGroup, FaSignOutAlt } from 'react-icons/fa';
+import { FaArrowLeft, FaLayerGroup, FaSignOutAlt } from 'react-icons/fa';
 import { supabase } from '../../supabase/client';
 import { getWizardState } from '../../supabase/supabaseWizard';
 import CustomButton from '../components/CustomButton';
@@ -58,20 +58,10 @@ export default function CardSettings() {
 
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-6">
         <p className="text-sm text-white/50">Manage your Visithon Card account.</p>
-
-        <button
-          type="button"
-          onClick={() => navigate('/card/wizard/step-1?edit=1', { state: { editMode: true } })}
-          className="flex w-full items-center gap-4 rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-4 text-left backdrop-blur-xl transition hover:border-violet-400/30 hover:bg-white/[0.09]"
-        >
-          <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-violet-400/30 bg-violet-500/15 text-violet-200">
-            <FaEdit />
-          </span>
-          <span>
-            <span className="block font-semibold text-white">Edit card</span>
-            <span className="text-xs text-white/45">Wizard — profession, theme, contacts…</span>
-          </span>
-        </button>
+        <p className="text-xs leading-relaxed text-white/38">
+          Full card editor (wizard) is only in your live card’s <span className="text-white/55">⋮</span> menu →{' '}
+          <span className="text-white/55">Edit card</span>.
+        </p>
 
         {showProductServiceMgmt && (
           <button

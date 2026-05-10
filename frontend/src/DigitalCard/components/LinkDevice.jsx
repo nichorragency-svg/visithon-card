@@ -79,7 +79,7 @@ export default function LinkDevice() {
   };
 
   const onCustomize = () => {
-    if (isOwner) navigate('/card/wizard/step-1');
+    if (isOwner) navigate('/card/wizard/step-1?edit=1', { state: { editMode: true } });
     else navigate('/card/login', { state: { from: 'customize-qr' } });
   };
 

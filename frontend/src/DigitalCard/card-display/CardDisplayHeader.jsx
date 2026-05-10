@@ -128,6 +128,19 @@ export function CardDisplayHeader({
               <FaDesktop className="text-lg text-cyan-300" /> My QR code
             </button>
 
+            {isOwner && (
+              <button
+                type="button"
+                className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-white/90 transition hover:bg-white/[0.1]"
+                onClick={() => {
+                  setMenuOpen(false);
+                  navigate('/card/wizard/step-1?edit=1', { state: { editMode: true } });
+                }}
+              >
+                <FaEdit className="text-lg text-fuchsia-300" /> Edit card
+              </button>
+            )}
+
             <button
               type="button"
               className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-white/90 transition hover:bg-white/[0.1]"
@@ -149,19 +162,6 @@ export function CardDisplayHeader({
             >
               <FaCog className="text-lg text-slate-300" /> Settings
             </button>
-
-            {isOwner && (
-              <button
-                type="button"
-                className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-white/90 transition hover:bg-white/[0.1]"
-                onClick={() => {
-                  setMenuOpen(false);
-                  navigate('/card/wizard/step-1?edit=1', { state: { editMode: true } });
-                }}
-              >
-                <FaEdit className="text-lg text-fuchsia-300" /> Edit card
-              </button>
-            )}
 
             <button
               type="button"
