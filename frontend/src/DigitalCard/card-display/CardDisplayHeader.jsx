@@ -7,7 +7,9 @@ import {
   FaEllipsisV,
   FaQrcode,
   FaShareAlt,
+  FaSignOutAlt,
 } from 'react-icons/fa';
+import { supabase } from '../../supabase/client';
 
 export function CardDisplayHeader({
   user,
@@ -20,9 +22,13 @@ export function CardDisplayHeader({
   setMenuOpen,
   isOwner,
   hasToken,
+  canLogout,
   goReminders,
   goSettings,
 }) {
+  const showLogout =
+    typeof canLogout === 'boolean' ? canLogout : !!(hasToken || isOwner);
+
   return (
     <header
       className={`sticky top-0 z-30 flex items-center justify-between border-b ${
@@ -130,6 +136,26 @@ export function CardDisplayHeader({
                 }}
               >
                 <FaEdit className="text-lg text-fuchsia-300" /> Edit card
+              </button>
+            )}
+
+            {showLogout && (
+              <button
+                type="button"
+                className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-rose-100/95 transition hover:bg-rose-500/15 border-t border-white/5 mt-1"
+                onClick={async () => {
+                  setMenuOpen(false);
+                  try {
+                    if (supabase) await supabase.auth.signOut();
+                  } catch {
+                    /* noop */
+                  }
+                  localStorage.removeItem('visithon_card_token');
+                  localStorage.removeItem('visithon_user_info');
+                  navigate('/card/login', { replace: true });
+                }}
+              >
+                <FaSignOutAlt className="text-lg text-rose-300" /> Log out
               </button>
             )}
 

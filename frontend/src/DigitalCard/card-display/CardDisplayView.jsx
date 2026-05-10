@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { SUPABASE_CONFIGURED } from '../../config';
+import { supabase } from '../../supabase/client';
 import { CardDisplayActionTiles } from './CardDisplayActionTiles';
 import { CardDisplayFooter } from './CardDisplayFooter';
 import { CardDisplayHeader } from './CardDisplayHeader';
@@ -26,6 +28,10 @@ export default function CardDisplayView() {
   const navigate = useNavigate();
   const { user, loading, fetchError, fetchCard } = useCardDisplayData(userId);
   const [menuOpen, setMenuOpen] = useState(false);
+  /** Supabase session + localStorage shadow; avoids menu thinking user is logged out when token not synced yet. */
+  const [hasSessionOrToken, setHasSessionOrToken] = useState(() =>
+    typeof localStorage !== 'undefined' ? !!localStorage.getItem('visithon_card_token') : false,
+  );
   const [servicesModalOpen, setServicesModalOpen] = useState(false);
   const [hoursModalOpen, setHoursModalOpen] = useState(false);
   const [accountModalOpen, setAccountModalOpen] = useState(false);
@@ -36,6 +42,29 @@ export default function CardDisplayView() {
     document.addEventListener('click', close);
     return () => document.removeEventListener('click', close);
   }, [menuOpen]);
+
+  useEffect(() => {
+    const fromLs = () =>
+      typeof localStorage !== 'undefined' && !!localStorage.getItem('visithon_card_token');
+    const apply = async () => {
+      if (!SUPABASE_CONFIGURED || !supabase) {
+        setHasSessionOrToken(fromLs());
+        return;
+      }
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setHasSessionOrToken(!!session?.access_token || fromLs());
+    };
+    apply();
+    if (!SUPABASE_CONFIGURED || !supabase) return undefined;
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      apply();
+    });
+    return () => subscription?.unsubscribe?.();
+  }, []);
 
   useEffect(() => {
     if (!servicesModalOpen && !hoursModalOpen && !accountModalOpen) return undefined;
@@ -62,8 +91,10 @@ export default function CardDisplayView() {
       }
     })();
 
-  const hasToken =
-    typeof localStorage !== 'undefined' && !!localStorage.getItem('visithon_card_token');
+  const hasToken = hasSessionOrToken;
+
+  /** Show Log out in ⋮ if we have a session/token OR this device is the card owner (local profile id matches URL). */
+  const canLogout = hasSessionOrToken || isOwner;
 
   const goReminders = () => {
     setMenuOpen(false);
@@ -166,6 +197,7 @@ export default function CardDisplayView() {
             setMenuOpen={setMenuOpen}
             isOwner={isOwner}
             hasToken={hasToken}
+            canLogout={canLogout}
             goReminders={goReminders}
             goSettings={goSettings}
           />
