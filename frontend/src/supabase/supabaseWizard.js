@@ -51,14 +51,18 @@ function mergeProfileBlob(prev, mutatorFn) {
 export async function mutateProfile(mutator) {
   const uid = await getSessionUserId();
   const row = await fetchProfile(uid);
-  const next = mergeProfileBlob(row.profile, mutator);
+  const next = mergeProfileBlob(row?.profile, mutator);
   const { error } = await ensureSupabase()
     .from('profiles')
-    .update({
-      profile: next,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', uid);
+    .upsert(
+      {
+        id: uid,
+        full_name: row?.full_name != null ? row.full_name : '',
+        profile: next,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'id' },
+    );
   if (error) throwReadable(error, 'Could not save.');
 }
 
@@ -166,36 +170,149 @@ export async function patchStep2(body) {
   });
 }
 
+/** Sanitize services list so React keys + DB always get stable `{ id, name }` objects. */
+export function normalizeStep4Items(raw) {
+  if (!Array.isArray(raw)) return [];
+  const out = [];
+  for (let i = 0; i < raw.length; i++) {
+    const it = raw[i];
+    if (!it || typeof it !== 'object') continue;
+    const name = String(it.name != null ? it.name : '').trim();
+    let id = String(it.id != null ? it.id : '').trim();
+    if (!id) {
+      id =
+        typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `svc_${Date.now()}_${i}_${Math.random().toString(36).slice(2, 9)}`;
+    }
+    out.push({ id, name });
+  }
+  return out;
+}
+
 export async function patchStep4({ items }) {
+  const clean = normalizeStep4Items(items);
   await mutateProfile((p) => {
-    p.step4 = { ...(p.step4 || {}), items: items || [] };
+    p.step4 = { ...(p.step4 || {}), items: clean };
   });
+}
+
+const STEP5_KEYS = ['facebook', 'instagram', 'linkedin', 'youtube', 'twitter', 'custom'];
+const STEP5_EMPTY = { enabled: false, url: '' };
+
+/** Stable social blocks for cardPayload / display (matches WizardStep5). */
+export function normalizeStep5Social(blob) {
+  const out = {};
+  for (const k of STEP5_KEYS) {
+    out[k] = { ...STEP5_EMPTY };
+    const b = blob && typeof blob === 'object' ? blob[k] : null;
+    if (b && typeof b === 'object') {
+      out[k] = {
+        enabled: !!b.enabled,
+        url: typeof b.url === 'string' ? b.url.trim().slice(0, 500) : '',
+      };
+    }
+  }
+  return out;
 }
 
 export async function patchStep5(socialBlob) {
+  const clean = normalizeStep5Social(socialBlob || {});
   await mutateProfile((p) => {
-    p.step5 = { ...(p.step5 || {}), ...socialBlob };
+    p.step5 = clean;
   });
+}
+
+export function normalizeStep6Body(body) {
+  const b = body && typeof body === 'object' ? body : {};
+  return {
+    phone: String(b.phone ?? '').trim().slice(0, 240),
+    whatsapp: String(b.whatsapp ?? '').trim().slice(0, 240),
+    whatsapp_visible: b.whatsapp_visible !== false,
+    email: String(b.email ?? '').trim().slice(0, 240),
+    website: String(b.website ?? '').trim().slice(0, 240),
+    location: String(b.location ?? '').trim().slice(0, 240),
+    show_all_contacts: b.show_all_contacts !== false,
+  };
 }
 
 export async function patchStep6(body) {
+  const clean = normalizeStep6Body(body);
   await mutateProfile((p) => {
-    p.step6 = { ...(p.step6 || {}), ...body };
+    p.step6 = clean;
   });
+}
+
+const STEP7_DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+/** One row per day; tolerates missing keys / bad types. */
+export function normalizeStep7Schedule(schedule) {
+  const s = schedule && typeof schedule === 'object' ? schedule : {};
+  const out = {};
+  for (let i = 0; i < STEP7_DAYS.length; i++) {
+    const key = STEP7_DAYS[i];
+    const defOpen = '09:00';
+    const defClose = '17:00';
+    const defaultEnabled = i < 5;
+    const row = s[key];
+    if (row && typeof row === 'object') {
+      out[key] = {
+        enabled: !!row.enabled,
+        open:
+          typeof row.open === 'string' && row.open.trim() ? row.open.trim().slice(0, 8) : defOpen,
+        close:
+          typeof row.close === 'string' && row.close.trim()
+            ? row.close.trim().slice(0, 8)
+            : defClose,
+      };
+    } else {
+      out[key] = { enabled: defaultEnabled, open: defOpen, close: defClose };
+    }
+  }
+  return out;
 }
 
 export async function patchStep7({ schedule }) {
+  const clean = normalizeStep7Schedule(schedule || {});
   await mutateProfile((p) => {
-    p.step7 = { ...(p.step7 || {}), ...(schedule || {}) };
+    p.step7 = { ...(p.step7 || {}), ...clean };
   });
 }
 
+const MAX_GALLERY_IMAGES = 24;
+
+export function normalizeStep8Images(raw) {
+  if (!Array.isArray(raw)) return [];
+  const out = [];
+  for (let i = 0; i < raw.length; i++) {
+    const it = raw[i];
+    if (!it || typeof it !== 'object') continue;
+    const url = String(it.url != null ? it.url : it.src != null ? it.src : '').trim();
+    if (!url) continue;
+    const id =
+      String(it.id || '').trim() ||
+      (typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `g_${Date.now()}_${i}`);
+    out.push({
+      id,
+      url,
+      name: String(it.name ?? '').trim().slice(0, 200),
+      price: String(it.price ?? '').trim().slice(0, 80),
+    });
+    if (out.length >= MAX_GALLERY_IMAGES) break;
+  }
+  return out;
+}
+
 export async function patchStep8({ images, videos }) {
+  const cleanImages = normalizeStep8Images(images);
+  const vid = Array.isArray(videos) ? videos : [];
   await mutateProfile((p) => {
     p.step8 = {
       ...(p.step8 || {}),
-      images: Array.isArray(images) ? images : [],
-      videos: Array.isArray(videos) ? videos : [],
+      images: cleanImages,
+      videos: vid,
     };
   });
 }

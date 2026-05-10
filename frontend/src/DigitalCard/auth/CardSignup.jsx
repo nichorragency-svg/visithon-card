@@ -51,7 +51,8 @@ const CardSignup = () => {
       });
       if (signErr) throw signErr;
 
-      if (data.user?.id && fn) {
+      // With "Confirm email" on, there is often no session yet — RLS blocks upsert (401). Trigger still creates profile + full_name from metadata.
+      if (data.session && data.user?.id && fn) {
         await supabase.from('profiles').upsert({
           id: data.user.id,
           full_name: fn,

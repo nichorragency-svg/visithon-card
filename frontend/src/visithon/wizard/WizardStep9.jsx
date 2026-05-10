@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaUniversity, FaUserAlt, FaCreditCard, FaPlus, FaTrash, FaQrcode, FaChevronDown } from 'react-icons/fa';
+import { apiErrorMessage } from '../../apiClient';
 import {
   finalizeBankAccountsFromWizard,
   getWizardState,
@@ -33,7 +34,21 @@ const PAK_BANKS = [
 ].sort();
 
 function emptyAccount() {
-  return { bank_name: '', account_title: '', iban: '', file: null };
+  return { bank_name: '', account_title: '', iban: '', pay_qr_img: '', file: null };
+}
+
+function sanitizeAccountsList(raw) {
+  if (!Array.isArray(raw) || raw.length === 0) return [emptyAccount()];
+  return raw.map((a) => {
+    if (!a || typeof a !== 'object') return emptyAccount();
+    return {
+      bank_name: String(a.bank_name || '').trim(),
+      account_title: String(a.account_title || '').trim(),
+      iban: String(a.iban || '').trim(),
+      pay_qr_img: String(a.pay_qr_img || a.qr_image_url || '').trim(),
+      file: a.file instanceof File ? a.file : null,
+    };
+  });
 }
 
 export default function WizardStep9() {
@@ -43,27 +58,39 @@ export default function WizardStep9() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  // 1. Data Load Karna (LocalStorage + Backend logic)
   useEffect(() => {
+    const token = localStorage.getItem('visithon_card_token');
+    if (!token) {
+      navigate('/card/login');
+      return;
+    }
+
     const loadData = async () => {
       try {
+        let list = null;
         const saved = localStorage.getItem('visithon_temp_accounts');
         if (saved) {
-          setAccounts(JSON.parse(saved));
-        } else {
-          const data = await getWizardState();
-          if (data.profile?.step9?.accounts) {
-            setAccounts(data.profile.step9.accounts);
+          try {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length) list = sanitizeAccountsList(parsed);
+          } catch {
+            localStorage.removeItem('visithon_temp_accounts');
           }
         }
+        if (!list) {
+          const data = await getWizardState();
+          const raw = data.profile?.step9?.accounts;
+          if (Array.isArray(raw) && raw.length) list = sanitizeAccountsList(raw);
+        }
+        setAccounts(list || [emptyAccount()]);
       } catch (e) {
-        console.log("No previous bank data found.");
+        setError(apiErrorMessage(e, 'Could not load payment step.'));
       } finally {
         setLoading(false);
       }
     };
     loadData();
-  }, []);
+  }, [navigate]);
 
   const updateAccount = (index, field, value) => {
     const newAccounts = accounts.map((acc, i) => (i === index ? { ...acc, [field]: value } : acc));
@@ -98,10 +125,7 @@ export default function WizardStep9() {
       navigate(`/card/view/${info.id}`);
       
     } catch (e) {
-      console.error("Save Error:", e);
-      // Detail error message dikhain
-      const msg = typeof e?.message === 'string' ? e.message : 'Could not save bank details.';
-      setError(msg);
+      setError(apiErrorMessage(e, 'Could not save bank details.'));
     } finally {
       setSaving(false);
     }
@@ -166,7 +190,7 @@ export default function WizardStep9() {
                   <FaUserAlt className="text-white/20 shrink-0" />
                   <CustomInput
                     placeholder="Account Title"
-                    value={a.account_title}
+                    value={a.account_title ?? ''}
                     onChange={(e) => updateAccount(i, 'account_title', e.target.value)}
                   />
                 </div>
@@ -175,7 +199,7 @@ export default function WizardStep9() {
                   <FaCreditCard className="text-white/20 shrink-0" />
                   <CustomInput
                     placeholder="Account Number / IBAN"
-                    value={a.iban}
+                    value={a.iban ?? ''}
                     onChange={(e) => updateAccount(i, 'iban', e.target.value)}
                   />
                 </div>

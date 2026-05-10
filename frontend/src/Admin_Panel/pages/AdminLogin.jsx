@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../config';
 import { ADMIN_TOKEN_KEY } from '../constants';
 
@@ -123,6 +123,12 @@ export default function AdminLogin() {
             >
               {loading ? 'Logging in…' : 'Login'}
             </button>
+
+            <p className="text-center text-sm text-white/45">
+              <Link to="/admin/forgot-password" className="text-teal-400/90 hover:text-teal-300 underline-offset-2 hover:underline">
+                Forgot password?
+              </Link>
+            </p>
           </form>
 
           <div className="mt-6 border-t border-white/10 pt-6">

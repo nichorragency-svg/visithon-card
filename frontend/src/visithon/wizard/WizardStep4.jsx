@@ -9,7 +9,7 @@ import {
   FaUserMd,
 } from 'react-icons/fa';
 import { apiErrorMessage } from '../../apiClient';
-import { getWizardState, patchStep4 } from '../../supabase/supabaseWizard';
+import { getWizardState, normalizeStep4Items, patchStep4 } from '../../supabase/supabaseWizard';
 import CustomButton from '../components/CustomButton';
 import CustomInput from '../components/CustomInput';
 import GlassShell from '../components/GlassShell';
@@ -43,7 +43,7 @@ export default function WizardStep4() {
         const data = await getWizardState();
         if (cancelled) return;
         const raw = data.profile?.step4?.items;
-        setItems(Array.isArray(raw) ? raw : []);
+        setItems(normalizeStep4Items(raw));
       } catch (e) {
         if (!cancelled) setError(apiErrorMessage(e, 'Could not load services.'));
       } finally {
@@ -135,9 +135,10 @@ export default function WizardStep4() {
             <div className="flex flex-col gap-2.5">
               {items.map((row, idx) => {
                 const Icon = iconForIndex(idx);
+                const key = row.id || `svc-fallback-${idx}`;
                 return (
                   <button
-                    key={row.id}
+                    key={key}
                     type="button"
                     onClick={() => openEdit(row)}
                     className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3.5 text-left shadow-lg backdrop-blur-xl transition hover:border-sky-400/25 hover:bg-white/[0.09]"
@@ -145,7 +146,7 @@ export default function WizardStep4() {
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-sky-400/35 bg-sky-500/15 text-sky-300">
                       <Icon className="text-lg" aria-hidden />
                     </span>
-                    <span className="min-w-0 flex-1 font-medium text-white">{row.name}</span>
+                    <span className="min-w-0 flex-1 font-medium text-white">{row.name || 'Service'}</span>
                     <FaChevronRight className="shrink-0 text-white/35" aria-hidden />
                   </button>
                 );
@@ -190,7 +191,7 @@ export default function WizardStep4() {
             <CustomInput
               label="Service Name"
               name="svcName"
-              value={modal.name}
+              value={modal.name ?? ''}
               onChange={(e) => setModal((m) => (m ? { ...m, name: e.target.value } : m))}
               placeholder="e.g. Consultation"
               maxLength={200}

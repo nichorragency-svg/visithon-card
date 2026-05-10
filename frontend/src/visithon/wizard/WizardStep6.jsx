@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaEnvelope, FaGlobe, FaMapMarkerAlt, FaPhoneAlt, FaWhatsapp } from 'react-icons/fa';
 import { apiErrorMessage } from '../../apiClient';
-import { getWizardState, patchStep6 } from '../../supabase/supabaseWizard';
+import { getWizardState, normalizeStep6Body, patchStep6 } from '../../supabase/supabaseWizard';
 import CustomButton from '../components/CustomButton';
 import CustomInput from '../components/CustomInput';
 import GlassShell from '../components/GlassShell';
@@ -34,13 +34,20 @@ export default function WizardStep6() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    const token = localStorage.getItem('visithon_card_token');
+    if (!token) {
+      navigate('/card/login');
+      return;
+    }
     let cancelled = false;
     (async () => {
       try {
         const data = await getWizardState();
         if (cancelled) return;
         const s6 = data.profile?.step6;
-        setC(s6 && typeof s6 === 'object' ? { ...initialContact(), ...s6 } : initialContact());
+        const merged =
+          s6 && typeof s6 === 'object' ? { ...initialContact(), ...s6 } : initialContact();
+        setC(normalizeStep6Body(merged));
       } catch (e) {
         if (!cancelled) setError(apiErrorMessage(e, 'Could not load contact details.'));
       } finally {
@@ -50,7 +57,7 @@ export default function WizardStep6() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [navigate]);
 
   const setField = (key, value) => {
     setC((prev) => ({ ...prev, [key]: value }));
@@ -113,7 +120,7 @@ export default function WizardStep6() {
                     <div className="mt-1">
                       <CustomInput
                         name={key}
-                        value={c[key]}
+                        value={c[key] ?? ''}
                         onChange={(e) => setField(key, e.target.value)}
                         placeholder={
                           key === 'phone' || key === 'whatsapp'

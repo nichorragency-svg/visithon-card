@@ -2,7 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaPlus, FaTimes, FaImage } from 'react-icons/fa';
 import { apiErrorMessage } from '../../apiClient';
-import { getWizardState, patchStep8, uploadGalleryFile } from '../../supabase/supabaseWizard';
+import {
+  getWizardState,
+  normalizeStep8Images,
+  patchStep8,
+  uploadGalleryFile,
+} from '../../supabase/supabaseWizard';
 import CustomButton from '../components/CustomButton';
 import GlassShell from '../components/GlassShell';
 import { staticUrl } from '../utils/staticUrl';
@@ -24,14 +29,18 @@ export default function WizardStep8() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    const token = localStorage.getItem('visithon_card_token');
+    if (!token) {
+      navigate('/card/login');
+      return;
+    }
     let cancelled = false;
     (async () => {
       try {
         const data = await getWizardState();
         if (cancelled) return;
         const s8 = data.profile?.step8;
-        // Sirf images ko load karna hy
-        setImages(Array.isArray(s8?.images) ? s8.images : []);
+        setImages(normalizeStep8Images(Array.isArray(s8?.images) ? s8.images : []));
       } catch (e) {
         if (!cancelled) setError(apiErrorMessage(e, 'Could not load gallery.'));
       } finally {
@@ -41,7 +50,7 @@ export default function WizardStep8() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [navigate]);
 
   const atCap = images.length >= MAX_IMAGES;
 

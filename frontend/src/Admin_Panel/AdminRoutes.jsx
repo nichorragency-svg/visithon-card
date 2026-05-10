@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { AdminLoginGate, AdminProtectedRoute } from './guards';
 import AdminLogin from './pages/AdminLogin';
+import AdminForgotPassword from './pages/AdminForgotPassword';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminShell from './layout/AdminShell';
 import AdminSection from './pages/AdminSection';
@@ -17,6 +18,14 @@ export default function AdminRoutes() {
         element={
           <AdminLoginGate>
             <AdminLogin />
+          </AdminLoginGate>
+        }
+      />
+      <Route
+        path="forgot-password"
+        element={
+          <AdminLoginGate>
+            <AdminForgotPassword />
           </AdminLoginGate>
         }
       />

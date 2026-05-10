@@ -1,7 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiErrorMessage } from '../../apiClient';
-import { getWizardState, patchStep7 } from '../../supabase/supabaseWizard';
+import {
+  getWizardState,
+  normalizeStep7Schedule,
+  patchStep7,
+} from '../../supabase/supabaseWizard';
 import CustomButton from '../components/CustomButton';
 import GlassShell from '../components/GlassShell';
 import GlassToggle from '../components/GlassToggle';
@@ -33,6 +37,11 @@ export default function WizardStep7() {
   const [timeModal, setTimeModal] = useState(null);
 
   useEffect(() => {
+    const token = localStorage.getItem('visithon_card_token');
+    if (!token) {
+      navigate('/card/login');
+      return;
+    }
     let cancelled = false;
     (async () => {
       try {
@@ -40,9 +49,21 @@ export default function WizardStep7() {
         if (cancelled) return;
         const s7 = data.profile?.step7;
         const base = emptySchedule();
+        const legacyBh =
+          s7?.business_hours && typeof s7.business_hours === 'object' ? s7.business_hours : null;
         if (s7 && typeof s7 === 'object') {
           DAY_KEYS.forEach(({ key }) => {
-            const row = s7[key];
+            let row = s7[key];
+            if ((!row || typeof row !== 'object') && legacyBh && legacyBh[key]) {
+              const br = legacyBh[key];
+              if (br && typeof br === 'object') {
+                row = {
+                  enabled: !br.is_closed,
+                  open: String(br.open != null ? br.open : '09:00').slice(0, 8),
+                  close: String(br.close != null ? br.close : '17:00').slice(0, 8),
+                };
+              }
+            }
             if (row && typeof row === 'object') {
               base[key] = {
                 enabled: !!row.enabled,
@@ -52,15 +73,17 @@ export default function WizardStep7() {
             }
           });
         }
-        setSchedule(base);
+        setSchedule(normalizeStep7Schedule(base));
       } catch (e) {
         if (!cancelled) setError(apiErrorMessage(e, 'Could not load business hours.'));
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
 
   const patchDay = (key, partial) => {
     setSchedule((prev) => ({

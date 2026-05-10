@@ -19,6 +19,12 @@ create table if not exists public.profiles (
 
 alter table public.profiles enable row level security;
 
+-- Safe to re-run: drop policies before re-creating (avoids "already exists").
+drop policy if exists "profiles_select_own" on public.profiles;
+drop policy if exists "profiles_update_own" on public.profiles;
+drop policy if exists "profiles_insert_own" on public.profiles;
+drop policy if exists "profiles_select_public_live" on public.profiles;
+
 create policy profiles_select_own
   on public.profiles for select
   using (auth.uid() = id);
@@ -48,6 +54,8 @@ create table if not exists public.themes (
 );
 
 alter table public.themes enable row level security;
+
+drop policy if exists "themes_read_active_anon" on public.themes;
 
 create policy themes_read_active_anon
   on public.themes for select
@@ -86,3 +94,40 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user ();
+
+-- ---------------------------------------------------------------------------
+-- Storage bucket `media` — REQUIRED or uploads return 400 / RLS errors
+-- Create bucket "media" in Dashboard (public) first, then run this block:
+-- ---------------------------------------------------------------------------
+drop policy if exists "media_public_select" on storage.objects;
+drop policy if exists "media_authenticated_insert" on storage.objects;
+drop policy if exists "media_authenticated_update" on storage.objects;
+drop policy if exists "media_authenticated_delete" on storage.objects;
+
+create policy "media_public_select"
+  on storage.objects for select
+  using (bucket_id = 'media');
+
+create policy "media_authenticated_insert"
+  on storage.objects for insert
+  to authenticated
+  with check (
+    bucket_id = 'media'
+    and (storage.foldername (name))[1] = (auth.uid ())::text
+  );
+
+create policy "media_authenticated_update"
+  on storage.objects for update
+  to authenticated
+  using (
+    bucket_id = 'media'
+    and (storage.foldername (name))[1] = (auth.uid ())::text
+  );
+
+create policy "media_authenticated_delete"
+  on storage.objects for delete
+  to authenticated
+  using (
+    bucket_id = 'media'
+    and (storage.foldername (name))[1] = (auth.uid ())::text
+  );

@@ -9,7 +9,7 @@ import {
   FaYoutube,
 } from 'react-icons/fa';
 import { apiErrorMessage } from '../../apiClient';
-import { getWizardState, patchStep5 } from '../../supabase/supabaseWizard';
+import { getWizardState, normalizeStep5Social, patchStep5 } from '../../supabase/supabaseWizard';
 import CustomButton from '../components/CustomButton';
 import CustomInput from '../components/CustomInput';
 import GlassShell from '../components/GlassShell';
@@ -58,19 +58,7 @@ export default function WizardStep5() {
         const data = await getWizardState();
         if (cancelled) return;
         const s5 = data.profile?.step5;
-        const next = defaultSocial();
-        if (s5 && typeof s5 === 'object') {
-          PLATFORMS.forEach(({ key }) => {
-            const b = s5[key];
-            if (b && typeof b === 'object') {
-              next[key] = {
-                enabled: !!b.enabled,
-                url: typeof b.url === 'string' ? b.url : '',
-              };
-            }
-          });
-        }
-        setSocial(next);
+        setSocial(normalizeStep5Social(s5 && typeof s5 === 'object' ? s5 : {}));
       } catch (e) {
         if (!cancelled) setError(apiErrorMessage(e, 'Could not load social links.'));
       } finally {
@@ -107,7 +95,7 @@ export default function WizardStep5() {
     } finally {
       setSaving(false);
     }
-};
+  };
 
   return (
     <GlassShell>
@@ -165,7 +153,7 @@ export default function WizardStep5() {
                         <CustomInput
                           label="Profile URL"
                           name={`url_${key}`}
-                          value={row.url}
+                          value={row.url ?? ''}
                           onChange={(e) => patch(key, { url: e.target.value })}
                           placeholder="https://..."
                           maxLength={500}
