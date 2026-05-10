@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { FaEnvelope, FaLock, FaSignInAlt, FaEye, FaEyeSlash } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { apiErrorMessage } from '../../apiClient';
 import { supabase } from '../../supabase/client';
 import { refreshLocalUserInfoForSession } from '../../supabase/supabaseWizard';
@@ -8,6 +8,7 @@ import './AuthLayout.css';
 
 const CardLogin = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -44,6 +45,17 @@ const CardLogin = () => {
         user = JSON.parse(localStorage.getItem('visithon_user_info') || '{}');
       } catch {
         user = {};
+      }
+
+      if (location.state?.from === 'saved-cards') {
+        navigate('/card/saved', { replace: true });
+        return;
+      }
+
+      const returnTo = location.state?.returnTo;
+      if (location.state?.from === 'wallet-save' && typeof returnTo === 'string' && returnTo.startsWith('/card/view/')) {
+        navigate(returnTo, { replace: true });
+        return;
       }
 
       if (user.has_card) {

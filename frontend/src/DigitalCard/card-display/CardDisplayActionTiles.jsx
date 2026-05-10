@@ -1,13 +1,21 @@
 import React from 'react';
 import {
   FaAddressBook,
+  FaBookmark,
   FaClipboardList,
+  FaIdCard,
   FaShoppingBasket,
   FaWhatsapp,
 } from 'react-icons/fa';
 import { triggerVCardDownload } from '../utils/downloadVCard';
 
 export function CardDisplayActionTiles({
+  navigate,
+  showWalletRow,
+  hasToken = false,
+  isWalletSaved,
+  onToggleWalletSave,
+  walletSavedCount,
   user,
   tileRowShowSave,
   showWa,
@@ -22,9 +30,14 @@ export function CardDisplayActionTiles({
   stWaTile,
   stSvcTile,
   stShopTile,
+  isLightTheme = false,
 }) {
   const bareIconClass =
     'flex items-center justify-center transition-all duration-300 active:scale-90 hover:scale-110 text-3xl sm:text-4xl p-2';
+
+  /** Inline colors so SVGs stay visible on any theme / build (Purged Tailwind-safe). */
+  const bookmarkInk = isWalletSaved ? '#fbbf24' : isLightTheme ? '#64748b' : '#f8fafc';
+  const myCardsInk = isLightTheme ? '#0369a1' : '#7dd3fc';
 
   return (
     <div className="mt-8">
@@ -78,6 +91,42 @@ export function CardDisplayActionTiles({
           >
             <FaShoppingBasket className={stShopTile.icon} />
           </button>
+        )}
+
+        {showWalletRow && (
+          <>
+            <button
+              type="button"
+              onClick={onToggleWalletSave}
+              className={bareIconClass}
+              title={
+                hasToken
+                  ? isWalletSaved
+                    ? 'Remove from My cards'
+                    : 'Save to My cards'
+                  : 'Login to save this card'
+              }
+            >
+              <FaBookmark style={{ width: 28, height: 28, color: bookmarkInk }} aria-hidden />
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                hasToken
+                  ? navigate('/card/saved')
+                  : navigate('/card/login', { state: { from: 'saved-cards' } })
+              }
+              className={`${bareIconClass} relative text-current`}
+              title={hasToken ? 'My saved cards' : 'Login to open My cards'}
+            >
+              <FaIdCard style={{ width: 28, height: 28, color: myCardsInk }} aria-hidden />
+              {hasToken && walletSavedCount > 0 ? (
+                <span className="pointer-events-none absolute -right-0.5 -top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-bold leading-none text-slate-950 shadow-md">
+                  {walletSavedCount > 99 ? '99+' : walletSavedCount}
+                </span>
+              ) : null}
+            </button>
+          </>
         )}
       </div>
     </div>

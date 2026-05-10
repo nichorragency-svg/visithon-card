@@ -22,6 +22,12 @@ import { onlyDigits, sortSocialEntries, withHttp } from './helpers';
 import { useCardDisplayData } from './useCardDisplayData';
 import { useCardDisplayShowcase } from './useCardDisplayShowcase';
 import { getCardDisplayTheme } from './useCardDisplayTheme';
+import {
+  getSavedCardCount,
+  isSavedCard,
+  removeSavedCard,
+  upsertSavedCard,
+} from '../utils/savedCardsStorage';
 
 export default function CardDisplayView() {
   const { userId } = useParams();
@@ -35,6 +41,7 @@ export default function CardDisplayView() {
   const [servicesModalOpen, setServicesModalOpen] = useState(false);
   const [hoursModalOpen, setHoursModalOpen] = useState(false);
   const [accountModalOpen, setAccountModalOpen] = useState(false);
+  const [walletTick, setWalletTick] = useState(0);
 
   useEffect(() => {
     if (!menuOpen) return undefined;
@@ -92,9 +99,40 @@ export default function CardDisplayView() {
     })();
 
   const hasToken = hasSessionOrToken;
+  /** Always offer wallet affordances on card view; mutations need login. */
+  const showWalletChrome = true;
+  void walletTick;
+  const isWalletSaved = userId ? isSavedCard(userId) : false;
+  const walletSavedCount = getSavedCardCount();
 
   /** Show Log out in ⋮ if we have a session/token OR this device is the card owner (local profile id matches URL). */
   const canLogout = hasSessionOrToken || isOwner;
+
+  const toggleWalletSave = () => {
+    if (!userId) return;
+    if (!hasToken) {
+      navigate('/card/login', {
+        state: {
+          from: 'wallet-save',
+          returnTo: `/card/view/${encodeURIComponent(String(userId).trim())}`,
+        },
+      });
+      return;
+    }
+    if (isSavedCard(userId)) removeSavedCard(userId);
+    else {
+      const cardUrl =
+        typeof window !== 'undefined'
+          ? `${window.location.origin}/card/view/${encodeURIComponent(String(userId).trim())}`
+          : '';
+      upsertSavedCard({
+        userId,
+        name: String(user?.name || '').trim(),
+        cardUrl,
+      });
+    }
+    setWalletTick((t) => t + 1);
+  };
 
   const goReminders = () => {
     setMenuOpen(false);
@@ -145,7 +183,7 @@ export default function CardDisplayView() {
   const tileRowShowSave = !!showContacts;
   const tileRowShop = tileRowShopAsLink || tileRowShopAsWa;
   const tileRowShowActions =
-    tileRowShowSave || showWa || tileRowShowServices || tileRowShop;
+    tileRowShowSave || showWa || tileRowShowServices || tileRowShop || showWalletChrome;
 
   const hasBusinessHours =
     user.business_hours &&
@@ -198,6 +236,9 @@ export default function CardDisplayView() {
             isOwner={isOwner}
             hasToken={hasToken}
             canLogout={canLogout}
+            isWalletSaved={isWalletSaved}
+            onToggleWalletSave={toggleWalletSave}
+            walletSavedCount={walletSavedCount}
             goReminders={goReminders}
             goSettings={goSettings}
           />
@@ -232,6 +273,12 @@ export default function CardDisplayView() {
 
             {tileRowShowActions ? (
               <CardDisplayActionTiles
+                navigate={navigate}
+                showWalletRow={showWalletChrome}
+                hasToken={hasToken}
+                isWalletSaved={isWalletSaved}
+                onToggleWalletSave={toggleWalletSave}
+                walletSavedCount={walletSavedCount}
                 user={user}
                 tileRowShowSave={tileRowShowSave}
                 showWa={showWa}
@@ -247,6 +294,7 @@ export default function CardDisplayView() {
                 stSvcTile={stSvcTile}
                 stShopTile={stShopTile}
                 tileInnerStyle={tileInnerStyle}
+                isLightTheme={isLightTheme}
               />
             ) : null}
 

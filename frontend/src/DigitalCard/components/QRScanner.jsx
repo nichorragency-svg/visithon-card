@@ -2,7 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaTimes } from 'react-icons/fa';
+import { SUPABASE_CONFIGURED } from '../../config';
+import { supabase } from '../../supabase/client';
 import GlassShell from '../../visithon/components/GlassShell';
+import { parseViewUserIdFromUrl, upsertSavedCard } from '../utils/savedCardsStorage';
+
+async function isLoggedInForWallet() {
+  if (typeof localStorage !== 'undefined' && localStorage.getItem('visithon_card_token')) return true;
+  if (!SUPABASE_CONFIGURED || !supabase) return false;
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  return !!session?.access_token;
+}
 
 const QRScanner = () => {
   const [scanResult, setScanResult] = useState(null);
@@ -23,7 +35,19 @@ const QRScanner = () => {
       setScanResult(result);
 
       if (result.includes('/card/view/')) {
-        window.location.href = result;
+        void (async () => {
+          const uid = parseViewUserIdFromUrl(result);
+          if (uid && (await isLoggedInForWallet())) {
+            let cardUrl = String(result).trim();
+            try {
+              cardUrl = new URL(cardUrl, window.location.origin).href;
+            } catch {
+              cardUrl = `${window.location.origin}/card/view/${encodeURIComponent(uid)}`;
+            }
+            upsertSavedCard({ userId: uid, name: '', cardUrl });
+          }
+          window.location.href = result;
+        })();
       } else {
         alert(`Scanned: ${result}`);
       }

@@ -22,6 +22,7 @@ import WizardStep9 from '../visithon/wizard/WizardStep9';
 import RemindersList from '../visithon/reminders/RemindersList';
 import AddReminder from '../visithon/reminders/AddReminder';
 import CardSettings from '../visithon/settings/CardSettings';
+import SavedCardsList from './pages/SavedCardsList';
 
 import { SUPABASE_CONFIGURED } from '../config';
 import { supabase } from '../supabase/client';
@@ -116,6 +117,10 @@ const DigitalCardRoutesComp = () => {
       <Route path="view/:userId" element={<CardDisplay />} />
       <Route path="scan" element={<QRScanner />} />
       <Route path="link-device/:userId" element={<LinkDevice />} />
+      <Route
+        path="saved"
+        element={isCardAuthenticated ? <SavedCardsList /> : <Navigate to="/card/login" replace state={{ from: 'saved-cards' }} />}
+      />
 
       <Route
         path="wizard/step-1"

@@ -1,10 +1,12 @@
 import React from 'react';
 import {
   FaBell,
+  FaBookmark,
   FaCog,
   FaDesktop,
   FaEdit,
   FaEllipsisV,
+  FaIdCard,
   FaQrcode,
   FaShareAlt,
   FaSignOutAlt,
@@ -23,11 +25,17 @@ export function CardDisplayHeader({
   isOwner,
   hasToken,
   canLogout,
+  isWalletSaved,
+  onToggleWalletSave,
+  walletSavedCount,
   goReminders,
   goSettings,
 }) {
   const showLogout =
     typeof canLogout === 'boolean' ? canLogout : !!(hasToken || isOwner);
+
+  const bookmarkIconColor = isWalletSaved ? '#fbbf24' : isLightTheme ? '#475569' : '#f1f5f9';
+  const idCardIconColor = isLightTheme ? '#0284c7' : '#7dd3fc';
 
   return (
     <header
@@ -37,7 +45,7 @@ export function CardDisplayHeader({
       style={headerInlineStyle}
     >
       {/* --- LOGO SECTION --- */}
-      <div className="flex h-11 items-center justify-start min-w-[44px]">
+      <div className="flex h-11 min-w-[44px] shrink-0 items-center justify-start">
         <img 
           src="/logo.png" 
           alt="Logo" 
@@ -47,12 +55,42 @@ export function CardDisplayHeader({
       </div>
 
       <h1
-        className={`max-w-[52%] bg-gradient-to-r ${selectedTheme.title} bg-clip-text text-center text-[10px] font-bold uppercase leading-tight tracking-[0.22em] text-transparent sm:text-[11px]`}
+        className={`min-w-0 flex-1 bg-gradient-to-r ${selectedTheme.title} bg-clip-text px-1 text-center text-[10px] font-bold uppercase leading-tight tracking-[0.22em] text-transparent sm:text-[11px]`}
       >
         Visithon Card
       </h1>
 
-      <div className="relative flex items-center justify-end">
+      <div className="relative flex shrink-0 items-center justify-end gap-1">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleWalletSave?.();
+          }}
+          className="flex h-9 w-9 min-h-[36px] min-w-[36px] touch-manipulation items-center justify-center rounded-xl border border-white/15 bg-white/[0.08] shadow-inner shadow-black/15 transition active:opacity-90 hover:border-amber-400/40 hover:bg-white/[0.12] sm:h-10 sm:w-10"
+          aria-label={isWalletSaved ? 'Remove from My cards' : 'Save to My cards'}
+          title={hasToken ? (isWalletSaved ? 'Remove from My cards' : 'Save to My cards') : 'Login to save this card'}
+        >
+          <FaBookmark style={{ width: 19, height: 19, color: bookmarkIconColor }} aria-hidden />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (hasToken) navigate('/card/saved');
+            else navigate('/card/login', { state: { from: 'saved-cards' } });
+          }}
+          className="relative flex h-9 w-9 min-h-[36px] min-w-[36px] touch-manipulation items-center justify-center rounded-xl border border-white/15 bg-white/[0.08] shadow-inner shadow-black/15 transition active:opacity-90 hover:border-sky-400/35 hover:bg-white/[0.12] sm:h-10 sm:w-10"
+          aria-label="My cards"
+          title={hasToken ? 'My saved cards' : 'Login to open My cards'}
+        >
+          <FaIdCard style={{ width: 19, height: 19, color: idCardIconColor }} aria-hidden />
+          {hasToken && walletSavedCount > 0 ? (
+            <span className="pointer-events-none absolute -right-1 -top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-amber-400 px-[3px] text-[9px] font-bold leading-none text-slate-900 shadow-sm">
+              {walletSavedCount > 99 ? '99+' : walletSavedCount}
+            </span>
+          ) : null}
+        </button>
         <button
           type="button"
           onClick={(e) => {
@@ -93,6 +131,41 @@ export function CardDisplayHeader({
             >
               <FaDesktop className="text-lg text-cyan-300" /> My QR code
             </button>
+
+            <>
+              <button
+                type="button"
+                className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-white/90 transition hover:bg-white/[0.1]"
+                onClick={() => {
+                  setMenuOpen(false);
+                  if (hasToken) navigate('/card/saved');
+                  else navigate('/card/login', { state: { from: 'saved-cards' } });
+                }}
+              >
+                <FaIdCard className="shrink-0 text-lg text-sky-200" /> My cards
+                {hasToken && walletSavedCount > 0 ? (
+                  <span className="ml-auto rounded-full bg-amber-500/25 px-2 py-0.5 text-[10px] font-semibold text-amber-200">
+                    {walletSavedCount > 99 ? '99+' : walletSavedCount}
+                  </span>
+                ) : null}
+              </button>
+              <button
+                type="button"
+                className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-white/90 transition hover:bg-white/[0.1]"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onToggleWalletSave?.();
+                }}
+              >
+                <FaBookmark className={`text-lg ${isWalletSaved ? 'text-amber-300' : 'text-white/50'}`} />
+                {isWalletSaved ? 'Remove from My cards' : 'Save to My cards'}
+                {!hasToken ? (
+                  <span className="ml-auto text-[10px] font-medium uppercase tracking-wide text-white/35">
+                    Login
+                  </span>
+                ) : null}
+              </button>
+            </>
 
             <button
               type="button"
