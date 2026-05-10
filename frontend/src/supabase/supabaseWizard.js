@@ -508,31 +508,51 @@ export async function deleteReminderById(reminderId) {
   if (error) throwReadable(error, 'Delete failed.');
 }
 
-/** Persist user_info + token shadow for routing. Call after login. */
-export async function refreshLocalUserInfoForSession(accessTokenFallback) {
+/**
+ * Persist user_info + token shadow for routing. Call after login.
+ * Pass `sessionFromAuth` right after signInWithPassword/signUp so we don’t rely on a second getSession()
+ * racing storage (some browsers stall on Authenticating…).
+ *
+ * @param {string | undefined} accessTokenFallback
+ * @param {import('@supabase/supabase-js').Session | null | undefined} sessionFromAuth
+ */
+export async function refreshLocalUserInfoForSession(accessTokenFallback, sessionFromAuth) {
   const supabase = ensureSupabase();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  let session = sessionFromAuth && sessionFromAuth.user ? sessionFromAuth : null;
+  if (!session) {
+    const {
+      data: { session: fromStorage },
+    } = await supabase.auth.getSession();
+    session = fromStorage ?? null;
+  }
+
   const token = session?.access_token || accessTokenFallback || '';
+
   if (!session?.user) {
     localStorage.removeItem('visithon_card_token');
     localStorage.removeItem('visithon_user_info');
     return;
   }
+
   localStorage.setItem('visithon_card_token', token);
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('has_card, id, full_name')
-    .eq('id', session.user.id)
-    .single();
+  let profile = null;
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('has_card, id, full_name')
+      .eq('id', session.user.id)
+      .maybeSingle();
+    if (!error && data) profile = data;
+  } catch {
+    profile = null;
+  }
 
   localStorage.setItem(
     'visithon_user_info',
     JSON.stringify({
       id: session.user.id,
-      email: session.user.email,
+      email: session.user.email ?? '',
       has_card: !!profile?.has_card,
       full_name:
         profile?.full_name ||

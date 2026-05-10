@@ -38,7 +38,23 @@ const CardLogin = () => {
         throw signErr;
       }
 
-      await refreshLocalUserInfoForSession(data.session?.access_token);
+      try {
+        await refreshLocalUserInfoForSession(data.session?.access_token, data.session ?? null);
+      } catch (profErr) {
+        console.warn('refreshLocalUserInfoForSession:', profErr);
+        if (data.session?.user?.id) {
+          localStorage.setItem('visithon_card_token', data.session.access_token || '');
+          localStorage.setItem(
+            'visithon_user_info',
+            JSON.stringify({
+              id: data.session.user.id,
+              email: data.session.user.email ?? '',
+              has_card: false,
+              full_name: data.session.user.user_metadata?.full_name ?? '',
+            }),
+          );
+        }
+      }
 
       let user = {};
       try {

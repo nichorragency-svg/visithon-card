@@ -61,7 +61,7 @@ const CardSignup = () => {
       }
 
       if (data.session) {
-        await refreshLocalUserInfoForSession(data.session.access_token);
+        await refreshLocalUserInfoForSession(data.session.access_token, data.session);
         navigate('/card/wizard/step-1');
       } else {
         setInfo('Account created — check your email to confirm before logging in.');

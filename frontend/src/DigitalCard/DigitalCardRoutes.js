@@ -65,14 +65,14 @@ const DigitalCardRoutesComp = () => {
       const { data } = await supabase.auth.getSession();
       setSession(data.session ?? null);
       if (data.session) {
-        await refreshLocalUserInfoForSession(data.session.access_token).catch(() => {});
+        await refreshLocalUserInfoForSession(data.session.access_token, data.session).catch(() => {});
       }
       setAuthReady(true);
     })();
 
     const ret = supabase.auth.onAuthStateChange(async (_event, sess) => {
       setSession(sess ?? null);
-      if (sess) await refreshLocalUserInfoForSession(sess.access_token).catch(() => {});
+      if (sess) await refreshLocalUserInfoForSession(sess.access_token, sess).catch(() => {});
       else {
         localStorage.removeItem('visithon_card_token');
         localStorage.removeItem('visithon_user_info');
