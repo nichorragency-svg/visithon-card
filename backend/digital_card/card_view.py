@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException
 
 from database import themes_collection, visithon_collection
 
-from digital_card.wizard import (
+from digital_card.card_payload_helpers import (
     _MAX_GALLERY_IMAGES,
     _MAX_GALLERY_VIDEOS,
     _SOCIAL_KEYS,

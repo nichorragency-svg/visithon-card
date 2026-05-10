@@ -1,4 +1,4 @@
-from . import step1, step2, step3, step4, step5, step6, step7, step8
+from . import step1, step2, step3, step4, step5, step6, step7, step8, step9
 
 # List of all step routers for easy inclusion
 all_step_routers = [

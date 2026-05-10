@@ -9,7 +9,11 @@ function detailMessage(detail) {
   if (Array.isArray(detail)) {
     return detail.map((x) => (typeof x === 'object' && x?.msg) || String(x)).join(' ');
   }
-  return 'Something went wrong.';
+  if (detail && typeof detail === 'object') {
+    const msg = detail.msg || detail.message;
+    if (typeof msg === 'string') return msg;
+  }
+  return '';
 }
 
 const SHOW_SELF_SERVICE_REGISTER =
@@ -36,7 +40,15 @@ export default function AdminLogin() {
     setErr('');
     setLoading(true);
     try {
-      const { data } = await axios.post(`${API_BASE_URL}/admin/login`, { email, password });
+      const base = String(API_BASE_URL || '').trim();
+      if (!base) {
+        setErr(
+          'Admin API URL missing. In Vercel (or .env) set REACT_APP_API_BASE_URL to your FastAPI root URL (no trailing slash), e.g. https://your-api.onrender.com — then rebuild the frontend. Local dev default is http://127.0.0.1:8000 only when running npm start.',
+        );
+        return;
+      }
+      const loginUrl = `${base.replace(/\/$/, '')}/admin/login`;
+      const { data } = await axios.post(loginUrl, { email, password });
       const token = data?.access_token;
       if (!token) {
         setErr('Invalid response from server.');
@@ -45,7 +57,16 @@ export default function AdminLogin() {
       localStorage.setItem(ADMIN_TOKEN_KEY, token);
       navigate('/admin', { replace: true });
     } catch (ex) {
-      setErr(detailMessage(ex.response?.data?.detail) || 'Login failed. Check email and password.');
+      const resp = ex.response;
+      if (!resp) {
+        const base = String(API_BASE_URL || '').trim() || '(no base URL)';
+        setErr(
+          `Server tak request nahi pohonchi (${base}). Backend chal raha hai? CORS / HTTPS theek hai? Error: ${ex.message || 'network'}`,
+        );
+        return;
+      }
+      const fromApi = detailMessage(resp.data?.detail);
+      setErr(fromApi || 'Login failed. Check email and password.');
     } finally {
       setLoading(false);
     }
