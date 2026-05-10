@@ -9,7 +9,9 @@ import {
   FaIdCard,
   FaQrcode,
   FaShareAlt,
+  FaSignOutAlt,
 } from 'react-icons/fa';
+import { supabase } from '../../supabase/client';
 
 export function CardDisplayHeader({
   user,
@@ -161,6 +163,24 @@ export function CardDisplayHeader({
               }}
             >
               <FaCog className="text-lg text-slate-300" /> Settings
+            </button>
+
+            <button
+              type="button"
+              className="flex w-full items-center gap-3 border-t border-white/5 px-4 py-3 text-left text-sm text-rose-100/95 transition hover:bg-rose-500/15"
+              onClick={async () => {
+                setMenuOpen(false);
+                try {
+                  if (supabase) await supabase.auth.signOut();
+                } catch {
+                  /* noop */
+                }
+                localStorage.removeItem('visithon_card_token');
+                localStorage.removeItem('visithon_user_info');
+                navigate('/card/login', { replace: true });
+              }}
+            >
+              <FaSignOutAlt className="text-lg text-rose-300" /> Log out
             </button>
 
             <button

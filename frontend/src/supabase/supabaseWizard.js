@@ -36,8 +36,9 @@ async function fetchProfile(uid) {
 }
 
 function mergeProfileBlob(prev, mutatorFn) {
+  /** Shallow clone top-level keys only — deep JSON clone of huge `profile` (gallery, etc.) freezes the UI on save. */
   const draft =
-    prev && typeof prev === 'object' ? JSON.parse(JSON.stringify(prev)) : {};
+    prev && typeof prev === 'object' && !Array.isArray(prev) ? { ...prev } : {};
   if (typeof mutatorFn === 'function') {
     mutatorFn(draft);
     return draft;

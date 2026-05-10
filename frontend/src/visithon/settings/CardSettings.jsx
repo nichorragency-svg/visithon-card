@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaLayerGroup, FaSignOutAlt } from 'react-icons/fa';
-import { supabase } from '../../supabase/client';
+import { FaArrowLeft, FaLayerGroup } from 'react-icons/fa';
 import { getWizardState } from '../../supabase/supabaseWizard';
-import CustomButton from '../components/CustomButton';
 import GlassShell from '../components/GlassShell';
 
 export default function CardSettings() {
@@ -31,17 +29,6 @@ export default function CardSettings() {
 
   const showProductServiceMgmt = shopFlag !== false;
 
-  const logout = async () => {
-    try {
-      if (supabase) await supabase.auth.signOut();
-    } catch {
-      /* noop */
-    }
-    localStorage.removeItem('visithon_card_token');
-    localStorage.removeItem('visithon_user_info');
-    navigate('/card/login', { replace: true });
-  };
-
   return (
     <GlassShell>
       <header className="shrink-0 flex items-center gap-3 border-b border-white/10 px-5 py-4 backdrop-blur-xl">
@@ -59,8 +46,8 @@ export default function CardSettings() {
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-6">
         <p className="text-sm text-white/50">Manage your Visithon Card account.</p>
         <p className="text-xs leading-relaxed text-white/38">
-          Full card editor (wizard) is only in your live card’s <span className="text-white/55">⋮</span> menu →{' '}
-          <span className="text-white/55">Edit card</span>.
+          <span className="text-white/55">Edit card</span> and <span className="text-white/55">Log out</span> are in your
+          live card’s <span className="text-white/55">⋮</span> menu.
         </p>
 
         {showProductServiceMgmt && (
@@ -89,17 +76,6 @@ export default function CardSettings() {
         <div className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4 backdrop-blur-xl">
           <p className="text-xs text-white/40">Reminders stay on this device account. Public card viewers do not see them.</p>
         </div>
-      </div>
-
-      <div className="shrink-0 border-t border-white/10 px-5 pb-8 pt-4 backdrop-blur-2xl">
-        <CustomButton
-          variant="glass"
-          onClick={logout}
-          className="border-rose-400/25 text-rose-100 hover:bg-rose-500/10"
-        >
-          <FaSignOutAlt className="text-rose-300" />
-          Log out
-        </CustomButton>
       </div>
     </GlassShell>
   );
