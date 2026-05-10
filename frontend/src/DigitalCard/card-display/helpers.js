@@ -12,6 +12,90 @@ export function withHttp(url) {
   return `https://${u}`;
 }
 
+/**
+ * Stable click target for known networks. Plain handles → full profile URLs.
+ * Roots like https://facebook.com/ open the viewer’s own session — treated as invalid (empty).
+ */
+export function canonicalSocialUrl(platformKey, raw) {
+  const trimmed = String(raw || '').trim();
+  if (!trimmed) return '';
+
+  let s = trimmed.replace(/^@+/u, '').trim();
+  if (!s) return '';
+
+  const hasDomain = /\.[a-z]{2,}/i.test(s) || /\//.test(s);
+  const plainHandle = /^[A-Za-z0-9_.-]+$/.test(s) && !hasDomain;
+
+  const buildHttps = () => withHttp(/^https?:\/\//i.test(s) ? s : s.startsWith('//') ? `https:${s}` : `https://${s}`);
+
+  let urlStr = '';
+
+  switch (platformKey) {
+    case 'facebook':
+      if (plainHandle) urlStr = `https://www.facebook.com/${encodeURIComponent(s)}`;
+      else urlStr = buildHttps();
+      break;
+    case 'instagram':
+      if (plainHandle) urlStr = `https://www.instagram.com/${encodeURIComponent(s)}/`;
+      else urlStr = buildHttps();
+      break;
+    case 'twitter':
+      if (plainHandle) urlStr = `https://x.com/${encodeURIComponent(s)}`;
+      else urlStr = buildHttps();
+      break;
+    case 'linkedin':
+      if (plainHandle) urlStr = `https://www.linkedin.com/in/${encodeURIComponent(s)}`;
+      else urlStr = buildHttps();
+      break;
+    case 'youtube': {
+      if (plainHandle) {
+        urlStr = /^UC[\w-]{10,}$/i.test(s)
+          ? `https://www.youtube.com/channel/${encodeURIComponent(s)}`
+          : `https://www.youtube.com/@${encodeURIComponent(s.replace(/^@/, ''))}`;
+      } else urlStr = buildHttps();
+      break;
+    }
+    default:
+      urlStr = buildHttps();
+  }
+
+  try {
+    const u = new URL(urlStr);
+    const hostRaw = u.hostname.toLowerCase();
+    const host = hostRaw.startsWith('www.') ? hostRaw.slice(4) : hostRaw;
+    const segments = u.pathname.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
+    const noPath = segments.length === 0;
+
+    const isBareHost = () => noPath && !u.search;
+
+    // Facebook / Meta
+    if (host === 'facebook.com' || host === 'm.facebook.com' || host === 'fb.com' || host === 'facebook.me')
+      return isBareHost() ? '' : urlStr;
+    if (host.endsWith('.facebook.com')) return urlStr;
+
+    if (host === 'instagram.com' || host.endsWith('.instagram.com'))
+      return isBareHost() ? '' : urlStr;
+
+    // X / Twitter
+    if (host === 'twitter.com' || host === 'x.com' || host === 'mobile.twitter.com') return isBareHost() ? '' : urlStr;
+
+    if (host === 'linkedin.com' || host.endsWith('.linkedin.com')) {
+      if (isBareHost()) return '';
+      return urlStr;
+    }
+
+    if (host === 'youtube.com' || host === 'youtu.be' || host.endsWith('.youtube.com')) {
+      if (host === 'youtu.be' && segments.length >= 1) return urlStr;
+      if (host === 'youtube.com' && isBareHost()) return '';
+      return urlStr;
+    }
+
+    return urlStr;
+  } catch {
+    return '';
+  }
+}
+
 export function hexToRgb(hex) {
   const h = String(hex || '').trim().replace('#', '');
   if (!/^[0-9a-fA-F]{6}$/.test(h)) return null;

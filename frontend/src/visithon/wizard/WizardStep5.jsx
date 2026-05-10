@@ -155,7 +155,7 @@ export default function WizardStep5() {
                           name={`url_${key}`}
                           value={row.url ?? ''}
                           onChange={(e) => patch(key, { url: e.target.value })}
-                          placeholder="https://..."
+                          placeholder="Paste full profile URL (e.g. facebook.com/YourPage) — avoid site home only."
                           maxLength={500}
                         />
                       </div>
