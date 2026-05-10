@@ -51,6 +51,10 @@ export default function CardDisplayView() {
   }, [menuOpen]);
 
   useEffect(() => {
+    if (!hasSessionOrToken && menuOpen) setMenuOpen(false);
+  }, [hasSessionOrToken, menuOpen]);
+
+  useEffect(() => {
     const fromLs = () =>
       typeof localStorage !== 'undefined' && !!localStorage.getItem('visithon_card_token');
     const apply = async () => {

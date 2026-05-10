@@ -85,20 +85,22 @@ export function CardDisplayHeader({
             </span>
           ) : null}
         </button>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setMenuOpen((o) => !o);
-          }}
-          className="flex h-11 w-11 min-h-[44px] min-w-[44px] touch-manipulation items-center justify-center rounded-2xl border border-white/12 bg-white/[0.07] text-white/95 shadow-inner shadow-black/20 transition active:opacity-90 hover:border-fuchsia-400/35 hover:bg-white/[0.12]"
-          aria-label="Menu"
-        >
-          <FaEllipsisV />
-        </button>
+        {hasToken ? (
+          <>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setMenuOpen((o) => !o);
+              }}
+              className="flex h-11 w-11 min-h-[44px] min-w-[44px] touch-manipulation items-center justify-center rounded-2xl border border-white/12 bg-white/[0.07] text-white/95 shadow-inner shadow-black/20 transition active:opacity-90 hover:border-fuchsia-400/35 hover:bg-white/[0.12]"
+              aria-label="Menu"
+            >
+              <FaEllipsisV />
+            </button>
 
-        {/* --- FIXED DROPDOWN MENU --- */}
-        {menuOpen && (
+            {/* Menu only after login */}
+            {menuOpen && (
           <div
             // Yahan z-50 aur bg-slate-950 fix kiya hy
             className="absolute right-0 top-14 z-50 w-56 overflow-hidden rounded-2xl border border-white/20 bg-slate-950 py-1 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-3xl animate-in fade-in zoom-in-95 duration-150"
@@ -126,41 +128,6 @@ export function CardDisplayHeader({
               <FaDesktop className="text-lg text-cyan-300" /> My QR code
             </button>
 
-            <>
-              <button
-                type="button"
-                className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-white/90 transition hover:bg-white/[0.1]"
-                onClick={() => {
-                  setMenuOpen(false);
-                  if (hasToken) navigate('/card/saved');
-                  else navigate('/card/login', { state: { from: 'saved-cards' } });
-                }}
-              >
-                <FaIdCard className="shrink-0 text-lg text-sky-200" /> My cards
-                {hasToken && walletSavedCount > 0 ? (
-                  <span className="ml-auto rounded-full bg-amber-500/25 px-2 py-0.5 text-[10px] font-semibold text-amber-200">
-                    {walletSavedCount > 99 ? '99+' : walletSavedCount}
-                  </span>
-                ) : null}
-              </button>
-              <button
-                type="button"
-                className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-white/90 transition hover:bg-white/[0.1]"
-                onClick={() => {
-                  setMenuOpen(false);
-                  onToggleWalletSave?.();
-                }}
-              >
-                <FaBookmark className={`text-lg ${isWalletSaved ? 'text-amber-300' : 'text-white/50'}`} />
-                {isWalletSaved ? 'Remove from My cards' : 'Save to My cards'}
-                {!hasToken ? (
-                  <span className="ml-auto text-[10px] font-medium uppercase tracking-wide text-white/35">
-                    Login
-                  </span>
-                ) : null}
-              </button>
-            </>
-
             <button
               type="button"
               className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-white/90 transition hover:bg-white/[0.1]"
@@ -170,11 +137,6 @@ export function CardDisplayHeader({
               }}
             >
               <FaBell className="text-lg text-amber-300" /> Reminders
-              {!hasToken && (
-                <span className="ml-auto text-[10px] font-medium uppercase tracking-wide text-white/35">
-                  Login
-                </span>
-              )}
             </button>
 
             <button
@@ -186,11 +148,6 @@ export function CardDisplayHeader({
               }}
             >
               <FaCog className="text-lg text-slate-300" /> Settings
-              {!hasToken && (
-                <span className="ml-auto text-[10px] font-medium uppercase tracking-wide text-white/35">
-                  Login
-                </span>
-              )}
             </button>
 
             {isOwner && (
@@ -221,7 +178,9 @@ export function CardDisplayHeader({
               <FaShareAlt className="text-lg text-emerald-300" /> Share
             </button>
           </div>
-        )}
+            )}
+          </>
+        ) : null}
       </div>
     </header>
   );
