@@ -13,11 +13,26 @@ export function withHttp(url) {
 }
 
 /**
+ * Clipboard / rich-text paste often injects BOM, zero-width, bidi overrides, or fullwidth punctuation
+ * — those break URL parsing or query strings (`profile.php?id=…`).
+ */
+export function sanitizeSocialPaste(raw) {
+  return String(raw || '')
+    .replace(/[\u0000\uFEFF]/g, '')
+    .replace(/[\u200B-\u200F\u2066-\u2069\u202A-\u202E]/g, '')
+    .replace(/\uFF1F/g, '?')
+    .replace(/\uFF1A/g, ':')
+    .replace(/\uFF0F/g, '/')
+    .replace(/\uFF06/g, '&')
+    .trim();
+}
+
+/**
  * Stable click target for known networks. Plain handles → full profile URLs.
  * Roots like https://facebook.com/ open the viewer’s own session — treated as invalid (empty).
  */
 export function canonicalSocialUrl(platformKey, raw) {
-  const trimmed = String(raw || '').trim();
+  const trimmed = sanitizeSocialPaste(String(raw || '').trim());
   if (!trimmed) return '';
 
   let s = trimmed.replace(/^@+/u, '').trim();
@@ -31,10 +46,43 @@ export function canonicalSocialUrl(platformKey, raw) {
   let urlStr = '';
 
   switch (platformKey) {
-    case 'facebook':
-      if (plainHandle) urlStr = `https://www.facebook.com/${encodeURIComponent(s)}`;
+    case 'facebook': {
+      // Numeric profile id → canonical profile.php URL (handles classic FB links cleanly).
+      if (/^[0-9]{8,20}$/.test(s)) {
+        urlStr = `https://www.facebook.com/profile.php?id=${encodeURIComponent(s)}`;
+        break;
+      }
+      const idOnlyMatch = /\bid=(\d{8,20})\b/i.exec(s);
+      if ((!/^https?:\/\//i.test(s) || !/\./.test(s)) && idOnlyMatch) {
+        urlStr = `https://www.facebook.com/profile.php?id=${encodeURIComponent(idOnlyMatch[1])}`;
+        break;
+      }
+      const profilePhpNoHost =
+        /^\s*facebook\.com\//i.test(s) ||
+        /^\s*www\.facebook\.com\//i.test(s) ||
+        /^\s*m\.facebook\.com\//i.test(s);
+      if (!/^https?:\/\//i.test(s)) {
+        const low = s.toLowerCase();
+        if (/^profile\.php\b/i.test(low)) {
+          urlStr = withHttp(`www.facebook.com/${s.replace(/^\/+/, '')}`);
+          break;
+        }
+        if (profilePhpNoHost) {
+          urlStr = withHttp(
+            s.replace(/^\s*(?:facebook\.com\/|www\.facebook\.com\/|m\.facebook\.com\/)?\s*/i, 'www.facebook.com/'),
+          );
+          break;
+        }
+      }
+      const looksLikeFbProfilePath = /(^|\/)profile\.php\b/i.test(s);
+      const looksFbHost = /\b(?:www\.|m\.)?facebook\.com\b/i.test(s) || /\bfb\.(?:me|com)\b/i.test(s);
+      // Avoid turning bare numeric IDs into bogus path segments (freeze / wrong destinations).
+      if (plainHandle && !/^[0-9]+$/.test(s) && !/[=?&#]/.test(s)) urlStr = `https://www.facebook.com/${encodeURIComponent(s)}`;
+      else if (looksLikeFbProfilePath && !looksFbHost)
+        urlStr = withHttp(s.startsWith('http') ? s : `https://www.facebook.com/${s.replace(/^\/?/, '')}`);
       else urlStr = buildHttps();
       break;
+    }
     case 'instagram':
       if (plainHandle) urlStr = `https://www.instagram.com/${encodeURIComponent(s)}/`;
       else urlStr = buildHttps();

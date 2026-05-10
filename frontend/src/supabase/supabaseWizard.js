@@ -1,4 +1,5 @@
 import { ensureSupabase } from './client';
+import { sanitizeSocialPaste } from '../DigitalCard/card-display/helpers';
 import { THEME_STYLE_BY_ID } from '../visithon/wizard/themeVisuals';
 
 /** @typedef {import('@supabase/supabase-js').SupabaseClient} SupabaseClient */
@@ -216,7 +217,7 @@ export function normalizeStep5Social(blob) {
         enabled: !!b.enabled,
         url:
           typeof b.url === 'string'
-            ? b.url.trim().replace(/\u0000/g, '').slice(0, 500)
+            ? sanitizeSocialPaste(b.url).slice(0, 500)
             : '',
       };
     }
