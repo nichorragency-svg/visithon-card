@@ -110,7 +110,7 @@ const DigitalCardRoutesComp = () => {
           !authReady ? (
             <SplashScreen />
           ) : !isCardAuthenticated ? (
-            <SplashScreen />
+            <Navigate to="/card/login" replace />
           ) : userId ? (
             <Navigate to={`/card/view/${userId}`} replace />
           ) : (

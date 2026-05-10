@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaUniversity, FaUserAlt, FaCreditCard, FaPlus, FaTrash, FaQrcode, FaChevronDown } from 'react-icons/fa';
 import { apiErrorMessage } from '../../apiClient';
+import { supabase } from '../../supabase/client';
 import {
   finalizeBankAccountsFromWizard,
   getWizardState,
@@ -121,7 +122,10 @@ export default function WizardStep9() {
       await finalizeBankAccountsFromWizard(accounts);
 
       localStorage.removeItem('visithon_temp_accounts');
-      await refreshLocalUserInfoForSession();
+      const {
+        data: { session: fresh },
+      } = await supabase.auth.getSession();
+      await refreshLocalUserInfoForSession(fresh?.access_token, fresh);
       navigate(`/card/view/${info.id}`);
       
     } catch (e) {

@@ -540,15 +540,27 @@ export async function refreshLocalUserInfoForSession(accessTokenFallback, sessio
   const supabase = ensureSupabase();
   let session = sessionFromAuth && sessionFromAuth.user ? sessionFromAuth : null;
   if (!session) {
-    const {
-      data: { session: fromStorage },
-    } = await supabase.auth.getSession();
-    session = fromStorage ?? null;
+    try {
+      const { data } = await withTimeout(
+        () => supabase.auth.getSession(),
+        12000,
+        'session read timed out',
+      );
+      session = data?.session ?? null;
+    } catch {
+      session = null;
+    }
   }
 
   const token = session?.access_token || accessTokenFallback || '';
 
   if (!session?.user) {
+    /** Wizard steps often pass only the JWT — never wipe storage if Supabase briefly returns null. */
+    const fb = typeof accessTokenFallback === 'string' ? accessTokenFallback.trim() : '';
+    if (fb.length > 0) {
+      localStorage.setItem('visithon_card_token', fb);
+      return;
+    }
     localStorage.removeItem('visithon_card_token');
     localStorage.removeItem('visithon_user_info');
     return;
@@ -556,13 +568,18 @@ export async function refreshLocalUserInfoForSession(accessTokenFallback, sessio
 
   localStorage.setItem('visithon_card_token', token);
 
+  /** Never block login/nav on Supabase hangs — same fallback as plain catch. */
   let profile = null;
   try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('has_card, id, full_name')
-      .eq('id', session.user.id)
-      .maybeSingle();
+    const { data, error } = await withTimeout(async () =>
+      await supabase
+        .from('profiles')
+        .select('has_card, id, full_name')
+        .eq('id', session.user.id)
+        .maybeSingle(),
+      15000,
+      'profile lookup timed out',
+    );
     if (!error && data) profile = data;
   } catch {
     profile = null;

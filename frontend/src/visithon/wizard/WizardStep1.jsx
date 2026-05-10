@@ -32,7 +32,7 @@ export default function WizardStep1() {
           } = await supabase.auth.getSession();
           authed = !!session?.access_token;
           if (session?.access_token) {
-            await refreshLocalUserInfoForSession(session.access_token).catch(() => {});
+            await refreshLocalUserInfoForSession(session.access_token, session).catch(() => {});
           }
         }
         if (!authed) {
