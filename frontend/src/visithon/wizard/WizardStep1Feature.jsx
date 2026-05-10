@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaShoppingBag, FaUser } from 'react-icons/fa';
-import { apiClient, apiErrorMessage } from '../../apiClient';
+import { apiErrorMessage } from '../../apiClient';
+import { getWizardState, patchStep1ShopFlag } from '../../supabase/supabaseWizard';
 import CustomButton from '../components/CustomButton';
 import GlassShell from '../components/GlassShell';
 
@@ -24,7 +25,7 @@ export default function WizardStep1Feature() {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await apiClient.get('/visithon/wizard/state');
+        const data = await getWizardState();
         if (cancelled) return;
 
         const s1 = data.profile?.step1 || {};
@@ -61,7 +62,7 @@ export default function WizardStep1Feature() {
     setSaving(true);
     try {
       const enabled = choice === 'yes';
-      await apiClient.patch('/visithon/wizard/step1/shop-flag', {
+      await patchStep1ShopFlag({
         shop_portfolio_enabled: enabled,
       });
       if (enabled) navigate('/card/wizard/step-1-plan');

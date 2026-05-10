@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaPlus, FaTimes, FaImage } from 'react-icons/fa';
-import { apiClient, apiErrorMessage } from '../../apiClient';
+import { apiErrorMessage } from '../../apiClient';
+import { getWizardState, patchStep8, uploadGalleryFile } from '../../supabase/supabaseWizard';
 import CustomButton from '../components/CustomButton';
 import GlassShell from '../components/GlassShell';
 import { staticUrl } from '../utils/staticUrl';
@@ -26,7 +27,7 @@ export default function WizardStep8() {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await apiClient.get('/visithon/wizard/state');
+        const data = await getWizardState();
         if (cancelled) return;
         const s8 = data.profile?.step8;
         // Sirf images ko load karna hy
@@ -58,12 +59,9 @@ export default function WizardStep8() {
     
     try {
       for (const file of files) {
-        const fd = new FormData();
-        fd.append('file', file);
-        fd.append('kind', 'image'); // Video khatam, sirf image upload hoga
-        const { data } = await apiClient.post('/visithon/wizard/gallery', fd);
+        const data = await uploadGalleryFile(file, 'image');
         if (!data?.url) continue;
-        
+
         const entry = { id: data.id || newId(), url: data.url, name: '', price: '' };
         
         setImages((prev) => (prev.length >= MAX_IMAGES ? prev : [...prev, entry]));
@@ -88,7 +86,7 @@ export default function WizardStep8() {
     setSaving(true);
     try {
       // Videos array empty bhejenge kyunke option khatam kar diya hy
-      await apiClient.patch('/visithon/wizard/step8', { images, videos: [] });
+      await patchStep8({ images, videos: [] });
       navigate('/card/wizard/step-9'); 
     } catch (e) {
       setError(apiErrorMessage(e, 'Could not save gallery.'));

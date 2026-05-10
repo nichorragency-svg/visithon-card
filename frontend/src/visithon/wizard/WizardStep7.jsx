@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiClient, apiErrorMessage } from '../../apiClient';
+import { apiErrorMessage } from '../../apiClient';
+import { getWizardState, patchStep7 } from '../../supabase/supabaseWizard';
 import CustomButton from '../components/CustomButton';
 import GlassShell from '../components/GlassShell';
 import GlassToggle from '../components/GlassToggle';
@@ -35,7 +36,7 @@ export default function WizardStep7() {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await apiClient.get('/visithon/wizard/state');
+        const data = await getWizardState();
         if (cancelled) return;
         const s7 = data.profile?.step7;
         const base = emptySchedule();
@@ -78,7 +79,7 @@ export default function WizardStep7() {
     setError('');
     setSaving(true);
     try {
-      await apiClient.patch('/visithon/wizard/step7', { schedule: schedulePayload });
+      await patchStep7({ schedule: schedulePayload });
       navigate('/card/wizard/step-8');
     } catch (e) {
       setError(apiErrorMessage(e, 'Could not save business hours.'));

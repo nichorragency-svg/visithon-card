@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaEnvelope, FaGlobe, FaMapMarkerAlt, FaPhoneAlt, FaWhatsapp } from 'react-icons/fa';
-import { apiClient, apiErrorMessage } from '../../apiClient';
+import { apiErrorMessage } from '../../apiClient';
+import { getWizardState, patchStep6 } from '../../supabase/supabaseWizard';
 import CustomButton from '../components/CustomButton';
 import CustomInput from '../components/CustomInput';
 import GlassShell from '../components/GlassShell';
@@ -36,7 +37,7 @@ export default function WizardStep6() {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await apiClient.get('/visithon/wizard/state');
+        const data = await getWizardState();
         if (cancelled) return;
         const s6 = data.profile?.step6;
         setC(s6 && typeof s6 === 'object' ? { ...initialContact(), ...s6 } : initialContact());
@@ -59,7 +60,7 @@ export default function WizardStep6() {
     setError('');
     setSaving(true);
     try {
-      await apiClient.patch('/visithon/wizard/step6', {
+      await patchStep6({
         phone: c.phone.trim(),
         whatsapp: c.whatsapp.trim(),
         whatsapp_visible: !!c.whatsapp_visible,

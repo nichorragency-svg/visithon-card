@@ -1,85 +1,55 @@
 import { useCallback, useEffect, useState } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../../config';
+import { SUPABASE_CONFIGURED } from '../../config';
+import { fetchPublishedCardPayload } from '../../supabase/publicCardFetch';
 
-/** Two Mongo round-trips + slow Atlas: 20s client timeout was too tight. */
-const FETCH_TIMEOUT_MS = 45_000;
-
-function readAxiosDetail(err) {
-  if (!axios.isAxiosError(err) || err.response?.data == null) return null;
-  const d = err.response.data.detail;
-  if (typeof d === 'string') return d;
-  if (Array.isArray(d)) {
-    return d
-      .map((x) => (typeof x === 'object' && x?.msg ? x.msg : String(x)))
-      .filter(Boolean)
-      .join(' ');
-  }
-  return null;
-}
-
-/** Fetch `/card-view/:id` — same on mobile PWAs / WebView-friendly GET. */
 export function useCardDisplayData(userId) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
 
-  const load = useCallback(
-    async (signal) => {
-      if (!userId || String(userId).trim() === '') {
-        setUser(null);
-        setFetchError(null);
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
+  const load = useCallback(async () => {
+    if (!userId || String(userId).trim() === '') {
+      setUser(null);
       setFetchError(null);
-      try {
-        const id = String(userId).trim();
-        const res = await axios.get(`${API_BASE_URL}/card-view/${encodeURIComponent(id)}`, {
-          timeout: FETCH_TIMEOUT_MS,
-          signal,
-        });
-        setUser(res.data?.data ?? null);
-      } catch (err) {
-        if (axios.isAxiosError(err) && err.code === 'ERR_CANCELED') return;
+      setLoading(false);
+      return;
+    }
 
-        const detail = readAxiosDetail(err);
-        if (detail) console.error('Card fetch:', detail);
-        else console.error('Card fetch:', err?.message ?? err);
+    if (!SUPABASE_CONFIGURED) {
+      setUser(null);
+      setFetchError(
+        'Supabase env missing. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY, rebuild.',
+      );
+      setLoading(false);
+      return;
+    }
 
-        setUser(null);
-        if (axios.isAxiosError(err) && err.response?.status === 404) {
-          setFetchError(null);
-        } else {
-          const aborted = axios.isAxiosError(err) && err.code === 'ECONNABORTED';
-          if (aborted) {
-            setFetchError(
-              'Request timed out. Check API (port 8000), MongoDB Atlas (IP allowlist / URI), then retry.',
-            );
-          } else if (detail) {
-            setFetchError(detail.length > 220 ? `${detail.slice(0, 220)}…` : detail);
-          } else {
-            setFetchError(
-              'Could not load this card. Check your network and that the backend is running.',
-            );
-          }
-        }
-      } finally {
-        setLoading(false);
-      }
-    },
-    [userId],
-  );
+    setLoading(true);
+    setFetchError(null);
+
+    try {
+      const { payload } = await fetchPublishedCardPayload(String(userId).trim());
+      const data = payload?.data ?? null;
+      setUser(data);
+      setFetchError(null);
+    } catch (err) {
+      console.error('Card fetch:', err?.message ?? err);
+      const msg =
+        typeof err?.message === 'string' && err.message.trim()
+          ? err.message.trim()
+          : 'Could not load this card.';
+      setFetchError(msg.length > 220 ? `${msg.slice(0, 220)}…` : msg);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
 
   useEffect(() => {
-    const ac = new AbortController();
-    load(ac.signal);
-    return () => ac.abort();
+    load();
   }, [load]);
 
-  const fetchCard = useCallback(() => load(undefined), [load]);
+  const fetchCard = useCallback(() => load(), [load]);
 
   return { user, loading, fetchError, fetchCard };
 }

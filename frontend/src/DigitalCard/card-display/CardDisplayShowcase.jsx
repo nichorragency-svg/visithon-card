@@ -1,5 +1,4 @@
 import React from 'react';
-import { API_BASE_URL } from '../../config';
 import { staticUrl } from '../../visithon/utils/staticUrl';
 
 export function CardDisplayShowcase({
@@ -35,11 +34,14 @@ export function CardDisplayShowcase({
           {showcaseLoopItems.map((prod, index) => {
             const name = String(prod?.name || '').trim();
             const price = String(prod?.price || '').trim();
-            const imgSrc = prod?.image
-              ? `${API_BASE_URL}/static/product_assets/${prod.image}`
-              : prod?.url
-                ? staticUrl(prod.url)
-                : '';
+            const imgSrc =
+              prod?.url && prod.url.startsWith('http')
+                ? prod.url
+                : prod?.url
+                  ? staticUrl(prod.url)
+                  : prod?.image
+                    ? staticUrl(prod.image)
+                    : '';
             if (!imgSrc) return null;
 
             return (

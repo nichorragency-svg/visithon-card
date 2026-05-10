@@ -1,9 +1,14 @@
 import React from 'react';
-import { FaAddressBook, FaClipboardList, FaShoppingBasket, FaWhatsapp } from 'react-icons/fa';
-import { API_BASE_URL } from '../../config';
+import {
+  FaAddressBook,
+  FaClipboardList,
+  FaShoppingBasket,
+  FaWhatsapp,
+} from 'react-icons/fa';
+import { triggerVCardDownload } from '../utils/downloadVCard';
 
 export function CardDisplayActionTiles({
-  userId,
+  user,
   tileRowShowSave,
   showWa,
   waDigits,
@@ -18,23 +23,22 @@ export function CardDisplayActionTiles({
   stSvcTile,
   stShopTile,
 }) {
-  // Clean Style: No background, just the icon with its brand/theme color
-  const bareIconClass = "flex items-center justify-center transition-all duration-300 active:scale-90 hover:scale-110 text-3xl sm:text-4xl p-2";
+  const bareIconClass =
+    'flex items-center justify-center transition-all duration-300 active:scale-90 hover:scale-110 text-3xl sm:text-4xl p-2';
 
   return (
     <div className="mt-8">
-      <div className="flex flex-wrap justify-center items-center gap-6 sm:gap-8 px-4">
-        
+      <div className="flex flex-wrap items-center justify-center gap-6 px-4 sm:gap-8">
         {/* Save Contact */}
         {tileRowShowSave && (
-          <a
-            href={`${API_BASE_URL}/card-auth/download-vcard/${userId}`}
-            download
+          <button
+            type="button"
+            onClick={() => triggerVCardDownload(user)}
             className={bareIconClass}
             title="Save contact"
           >
             <FaAddressBook className={stSvTile.icon} />
-          </a>
+          </button>
         )}
 
         {/* WhatsApp */}
@@ -66,15 +70,15 @@ export function CardDisplayActionTiles({
         {(tileRowShopAsLink || tileRowShopAsWa) && (
           <button
             type="button"
-            onClick={tileRowShopAsLink ? () => window.open(tileRowShopWebsite, '_blank') : handleWhatsAppShop}
+            onClick={
+              tileRowShopAsLink ? () => window.open(tileRowShopWebsite, '_blank') : handleWhatsAppShop
+            }
             className={bareIconClass}
             title="Shop"
           >
-            {/* Tokri wala icon as requested */}
             <FaShoppingBasket className={stShopTile.icon} />
           </button>
         )}
-        
       </div>
     </div>
   );

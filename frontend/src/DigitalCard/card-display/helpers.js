@@ -1,4 +1,3 @@
-import { API_BASE_URL } from '../../config';
 import { staticUrl } from '../../visithon/utils/staticUrl';
 import { SOCIAL_DISPLAY_ORDER } from './styles';
 
@@ -55,7 +54,7 @@ export function actionTileOuterClass(ringGradient) {
 
 export function resolveAvatar(u) {
   if (u.avatar_static_path) return staticUrl(u.avatar_static_path);
-  if (u.legacy_profile_img) return `${API_BASE_URL}/static/digital_cards/${u.legacy_profile_img}`;
+  if (u.legacy_profile_img) return staticUrl(u.legacy_profile_img);
   return 'https://placehold.co/200x200/0f172a/64748b?text=V';
 }
 

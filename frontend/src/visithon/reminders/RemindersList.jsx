@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaPlus, FaTrash } from 'react-icons/fa';
-import { apiClient, apiErrorMessage } from '../../apiClient';
+import { apiErrorMessage } from '../../apiClient';
+import { deleteReminderById, listRemindersPayload } from '../../supabase/supabaseWizard';
 import CustomButton from '../components/CustomButton';
 import GlassShell from '../components/GlassShell';
 
@@ -14,7 +15,7 @@ export default function RemindersList() {
   const load = useCallback(async () => {
     setError('');
     try {
-      const { data } = await apiClient.get('/visithon/reminders');
+      const data = await listRemindersPayload();
       setItems(data.reminders || []);
     } catch (e) {
       setError(apiErrorMessage(e, 'Could not load reminders.'));
@@ -29,7 +30,7 @@ export default function RemindersList() {
 
   const remove = async (id) => {
     try {
-      await apiClient.delete(`/visithon/reminders/${encodeURIComponent(id)}`);
+      await deleteReminderById(id);
       setItems((prev) => prev.filter((r) => r.id !== id));
     } catch (e) {
       setError(apiErrorMessage(e, 'Could not delete.'));

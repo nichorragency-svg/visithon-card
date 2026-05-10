@@ -1,0 +1,418 @@
+import { ensureSupabase } from './client';
+import { THEME_STYLE_BY_ID } from '../visithon/wizard/themeVisuals';
+
+/** @typedef {import('@supabase/supabase-js').SupabaseClient} SupabaseClient */
+
+function throwReadable(e, fb) {
+  const msg =
+    e?.message ||
+    e?.error_description ||
+    (typeof e === 'string' ? e : null) ||
+    fb ||
+    'Request failed.';
+  throw new Error(msg);
+}
+
+export async function getSessionUserId() {
+  const supabase = ensureSupabase();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.user?.id) throw new Error('Not signed in.');
+  return session.user.id;
+}
+
+async function fetchProfile(uid) {
+  const supabase = ensureSupabase();
+  const { data, error } = await supabase
+    .from('profiles')
+    .select(
+      'id, full_name, has_card, wizard_completed, is_published, profile, products, payment_methods, reminders',
+    )
+    .eq('id', uid)
+    .maybeSingle();
+  if (error) throwReadable(error, 'Could not load profile.');
+  return data;
+}
+
+function mergeProfileBlob(prev, mutatorFn) {
+  const draft =
+    prev && typeof prev === 'object' ? JSON.parse(JSON.stringify(prev)) : {};
+  if (typeof mutatorFn === 'function') {
+    mutatorFn(draft);
+    return draft;
+  }
+  return draft;
+}
+
+/**
+ * Mutate nested `profiles.profile` JSON.
+ */
+export async function mutateProfile(mutator) {
+  const uid = await getSessionUserId();
+  const row = await fetchProfile(uid);
+  const next = mergeProfileBlob(row.profile, mutator);
+  const { error } = await ensureSupabase()
+    .from('profiles')
+    .update({
+      profile: next,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', uid);
+  if (error) throwReadable(error, 'Could not save.');
+}
+
+/** --- Themes --- */
+export async function fetchWizardThemes() {
+  const supabase = ensureSupabase();
+  const { data, error } = await supabase
+    .from('themes')
+    .select('layout_key, name, category, preview_url')
+    .eq('is_active', true)
+    .order('created_at', { ascending: false });
+
+  if (error || !data?.length) {
+    const themes = Object.keys(THEME_STYLE_BY_ID).map((layout_key) => ({
+      id: layout_key,
+      name: layout_key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+      subtitle: 'Built-in layout',
+      category:
+        layout_key.includes('minimal') || layout_key.includes('dark')
+          ? 'modern'
+          : layout_key.includes('nature') || layout_key.includes('green')
+          ? 'healthcare'
+          : layout_key.includes('creative')
+          ? 'creative'
+          : 'professional',
+    }));
+    return { themes };
+  }
+
+  const themes = data.map((r) => ({
+    id: r.layout_key,
+    name: r.name || r.layout_key,
+    subtitle: (r.category || '').toString(),
+    category: r.category || 'professional',
+    preview_url: r.preview_url,
+  }));
+
+  return { themes };
+}
+
+/** --- Wizard state --- */
+export async function getWizardState() {
+  const uid = await getSessionUserId();
+  const row = await fetchProfile(uid);
+  if (!row) return { ok: false, profile: {}, wizard_completed: false, is_published: false };
+  return {
+    ok: true,
+    profile: row.profile || {},
+    wizard_completed: !!row.wizard_completed,
+    is_published: !!row.is_published,
+  };
+}
+
+export async function patchStep1Profession({ profession }) {
+  const prof = String(profession || '').trim();
+  if (!prof) throw new Error('profession is required');
+  await mutateProfile((p) => {
+    const s1 = p.step1 || {};
+    s1.profession = prof;
+    p.step1 = s1;
+  });
+}
+
+export async function patchStep1ShopFlag({ shop_portfolio_enabled }) {
+  if (shop_portfolio_enabled !== true && shop_portfolio_enabled !== false) {
+    throw new Error('shop_portfolio_enabled must be boolean');
+  }
+  await mutateProfile((p) => {
+    const s1 = p.step1 || {};
+    s1.shop_portfolio_enabled = !!shop_portfolio_enabled;
+    if (!shop_portfolio_enabled) s1.pricing_plan = '';
+    p.step1 = s1;
+  });
+}
+
+export async function patchStep1PricingPlan({ pricing_plan }) {
+  const plan = String(pricing_plan || '').toLowerCase();
+  const allowed = new Set(['free', 'basic', 'pro']);
+  if (!allowed.has(plan)) throw new Error('Invalid pricing plan');
+  await mutateProfile((p) => {
+    const s1 = p.step1 || {};
+    if (s1.shop_portfolio_enabled !== true) throw new Error('Enable shop/portfolio before choosing plan.');
+    s1.pricing_plan = plan;
+    p.step1 = s1;
+  });
+}
+
+export async function patchStep3({ theme }) {
+  const tid = String(theme || '').trim();
+  if (!tid) throw new Error('theme required');
+  await mutateProfile((p) => {
+    const s1 = p.step1 || {};
+    s1.theme = tid;
+    p.step1 = s1;
+  });
+}
+
+export async function patchStep2(body) {
+  await mutateProfile((p) => {
+    const prev = p.step2 && typeof p.step2 === 'object' ? { ...p.step2 } : {};
+    for (const [k, v] of Object.entries(body || {})) {
+      if (v !== undefined && v !== null) prev[k] = v;
+    }
+    p.step2 = prev;
+  });
+}
+
+export async function patchStep4({ items }) {
+  await mutateProfile((p) => {
+    p.step4 = { ...(p.step4 || {}), items: items || [] };
+  });
+}
+
+export async function patchStep5(socialBlob) {
+  await mutateProfile((p) => {
+    p.step5 = { ...(p.step5 || {}), ...socialBlob };
+  });
+}
+
+export async function patchStep6(body) {
+  await mutateProfile((p) => {
+    p.step6 = { ...(p.step6 || {}), ...body };
+  });
+}
+
+export async function patchStep7({ schedule }) {
+  await mutateProfile((p) => {
+    p.step7 = { ...(p.step7 || {}), ...(schedule || {}) };
+  });
+}
+
+export async function patchStep8({ images, videos }) {
+  await mutateProfile((p) => {
+    p.step8 = {
+      ...(p.step8 || {}),
+      images: Array.isArray(images) ? images : [],
+      videos: Array.isArray(videos) ? videos : [],
+    };
+  });
+}
+
+const MEDIA_BUCKET = 'media';
+
+async function uploadBytes(path, file, mime) {
+  const supabase = ensureSupabase();
+  const buf = await file.arrayBuffer();
+  const { error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, buf, {
+    upsert: true,
+    contentType: mime || file.type || undefined,
+  });
+  if (error) throwReadable(error, 'Upload failed.');
+  const { data } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
+
+/** @returns {Promise<{ url: string, id?: string }>} */
+export async function uploadGalleryFile(file, kindHint) {
+  const uid = await getSessionUserId();
+  const ext = (file.name && file.name.split('.').pop()) || 'jpg';
+  const nid = crypto.randomUUID ? crypto.randomUUID() : `gal_${Date.now()}`;
+  const path = `${uid}/gallery/${nid}.${ext}`;
+  const url = await uploadBytes(path, file, kindHint === 'video' ? file.type : 'image/jpeg');
+  return { id: nid, url };
+}
+
+/** @returns {Promise<string>} public URL */
+export async function uploadAvatarFile(file) {
+  const uid = await getSessionUserId();
+  const ext = (file.name && file.name.split('.').pop()) || 'jpg';
+  const path = `${uid}/avatar.${ext}`;
+  const url = await uploadBytes(path, file, file.type);
+  await mutateProfile((p) => {
+    const s2 = p.step2 || {};
+    s2.avatar_url = url;
+    p.step2 = s2;
+  });
+  return url;
+}
+
+/** Persist payment_methods + finalize wizard flags (step 9). */
+export async function finalizeBankAccountsFromWizard(accountsDrafts) {
+  const uid = await getSessionUserId();
+  const supabase = ensureSupabase();
+
+  const clean = [];
+  for (let i = 0; i < accountsDrafts.length; i++) {
+    const acc = accountsDrafts[i] || {};
+    const file = acc.file instanceof File ? acc.file : undefined;
+    let pay_img = String(acc.pay_qr_img || '').trim();
+    if (file instanceof File) {
+      const ext = file.name.split('.').pop() || 'png';
+      const path = `${uid}/bank_qr_${i}_${Date.now()}.${ext}`;
+      pay_img = await uploadBytes(path, file);
+    }
+
+    clean.push({
+      bank_name: String(acc.bank_name || '').trim(),
+      account_title: String(acc.account_title || '').trim(),
+      iban: String(acc.iban || '').trim(),
+      pay_qr_img: pay_img,
+    });
+  }
+
+  await mutateProfile((p) => {
+    const s9 = {};
+    s9.accounts = accountsDrafts.map((a, i) => ({
+      bank_name: String(a.bank_name || '').trim(),
+      account_title: String(a.account_title || '').trim(),
+      iban: String(a.iban || '').trim(),
+      qr_image_url: clean[i]?.pay_qr_img || '',
+    }));
+    p.step9 = s9;
+  });
+
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      payment_methods: clean,
+      has_card: true,
+      wizard_completed: true,
+      is_published: true,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', uid);
+  if (error) throwReadable(error, 'Finalize failed.');
+}
+
+export async function updatePaymentAccountsViaForm(draftsThatMayHaveFiles, userId) {
+  const self = await getSessionUserId();
+  if (String(self) !== String(userId)) throw new Error('Not allowed.');
+
+  const clean = [];
+  for (let i = 0; i < draftsThatMayHaveFiles.length; i++) {
+    const d = draftsThatMayHaveFiles[i];
+    const file = d.file;
+    let pay_img = String(d.pay_qr_img || '').trim();
+    if (file instanceof File) {
+      const ext = file.name.split('.').pop() || 'png';
+      const path = `${self}/bank_qr_${i}_${Date.now()}.${ext}`;
+      pay_img = await uploadBytes(path, file);
+    }
+    clean.push({
+      bank_name: String(d.bank_name || '').trim(),
+      account_title: String(d.account_title || '').trim(),
+      iban: String(d.iban || '').trim(),
+      pay_qr_img: pay_img,
+    });
+  }
+
+  const { error } = await ensureSupabase()
+    .from('profiles')
+    .update({
+      payment_methods: clean,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', self);
+  if (error) throwReadable(error, 'Save failed.');
+}
+
+function normalizeReminder(raw) {
+  const title = String(raw.title || '').trim();
+  if (!title) return null;
+  const rtypeRaw = String(raw.type || 'Follow Up').trim();
+  const types = new Set(['Follow Up', 'Meeting', 'Personal', 'Other']);
+  const type = types.has(rtypeRaw) ? rtypeRaw : 'Other';
+  return {
+    id: String(raw.id || '').trim() || `r_${Date.now()}`,
+    title: title.slice(0, 200),
+    date: String(raw.date || '').slice(0, 32),
+    time: String(raw.time || '').slice(0, 16),
+    type,
+    note: String(raw.note || '').slice(0, 2000),
+    created_at: raw.created_at || new Date().toISOString(),
+  };
+}
+
+export async function listRemindersPayload() {
+  const uid = await getSessionUserId();
+  const row = await fetchProfile(uid);
+  const raw = Array.isArray(row.reminders) ? row.reminders : [];
+  const out = [];
+  for (const it of raw) {
+    const n = normalizeReminder(it);
+    if (n) out.push(n);
+  }
+  out.sort((a, b) => `${b.date}|${b.time}`.localeCompare(`${a.date}|${a.time}`));
+  return { reminders: out };
+}
+
+export async function createReminder(data) {
+  const uid = await getSessionUserId();
+  const row = await fetchProfile(uid);
+  const cur = Array.isArray(row.reminders) ? [...row.reminders] : [];
+  if (cur.length >= 120) throw new Error('Too many reminders');
+  const nw = normalizeReminder({
+    ...data,
+    id: data.id || (crypto.randomUUID ? crypto.randomUUID() : undefined),
+    created_at: new Date().toISOString(),
+  });
+  if (!nw) throw new Error('Invalid reminder');
+
+  cur.push(nw);
+
+  const { error } = await ensureSupabase()
+    .from('profiles')
+    .update({ reminders: cur, updated_at: new Date().toISOString() })
+    .eq('id', uid);
+  if (error) throwReadable(error, 'Save failed.');
+  return { ok: true, reminder: nw };
+}
+
+export async function deleteReminderById(reminderId) {
+  const uid = await getSessionUserId();
+  const row = await fetchProfile(uid);
+  const cur = Array.isArray(row.reminders) ? row.reminders : [];
+  const next = cur.filter((it) => it && typeof it === 'object' && String(it.id) !== String(reminderId));
+
+  const { error } = await ensureSupabase()
+    .from('profiles')
+    .update({ reminders: next, updated_at: new Date().toISOString() })
+    .eq('id', uid);
+  if (error) throwReadable(error, 'Delete failed.');
+}
+
+/** Persist user_info + token shadow for routing. Call after login. */
+export async function refreshLocalUserInfoForSession(accessTokenFallback) {
+  const supabase = ensureSupabase();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const token = session?.access_token || accessTokenFallback || '';
+  if (!session?.user) {
+    localStorage.removeItem('visithon_card_token');
+    localStorage.removeItem('visithon_user_info');
+    return;
+  }
+  localStorage.setItem('visithon_card_token', token);
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('has_card, id, full_name')
+    .eq('id', session.user.id)
+    .single();
+
+  localStorage.setItem(
+    'visithon_user_info',
+    JSON.stringify({
+      id: session.user.id,
+      email: session.user.email,
+      has_card: !!profile?.has_card,
+      full_name:
+        profile?.full_name ||
+        session.user.user_metadata?.full_name ||
+        '',
+    }),
+  );
+}

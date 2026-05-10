@@ -8,7 +8,8 @@ import {
   FaTwitter,
   FaYoutube,
 } from 'react-icons/fa';
-import { apiClient, apiErrorMessage } from '../../apiClient';
+import { apiErrorMessage } from '../../apiClient';
+import { getWizardState, patchStep5 } from '../../supabase/supabaseWizard';
 import CustomButton from '../components/CustomButton';
 import CustomInput from '../components/CustomInput';
 import GlassShell from '../components/GlassShell';
@@ -54,7 +55,7 @@ export default function WizardStep5() {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await apiClient.get('/visithon/wizard/state');
+        const data = await getWizardState();
         if (cancelled) return;
         const s5 = data.profile?.step5;
         const next = defaultSocial();
@@ -98,7 +99,7 @@ export default function WizardStep5() {
     setError('');
     setSaving(true);
     try {
-      await apiClient.patch('/visithon/wizard/step5', social);
+      await patchStep5(social);
       // Step-7 ki bajaye Step-6 par bhejein
       navigate('/card/wizard/step-6'); 
     } catch (e) {

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiClient, apiErrorMessage } from '../../apiClient';
+import { apiErrorMessage } from '../../apiClient';
+import { fetchWizardThemes, getWizardState, patchStep3 } from '../../supabase/supabaseWizard';
 import CustomButton from '../components/CustomButton';
 import GlassShell from '../components/GlassShell';
 import { THEME_STYLE_BY_ID } from './themeVisuals';
@@ -41,9 +42,9 @@ export default function WizardStep3() {
     let cancelled = false;
     (async () => {
       try {
-        const [{ data: listData }, { data: stateData }] = await Promise.all([
-          apiClient.get('/visithon/wizard/themes'),
-          apiClient.get('/visithon/wizard/state'),
+        const [listData, stateData] = await Promise.all([
+          fetchWizardThemes(),
+          getWizardState(),
         ]);
         if (cancelled) return;
 
@@ -79,7 +80,7 @@ export default function WizardStep3() {
     setSaving(true);
     try {
       // Theme save karein
-      await apiClient.patch('/visithon/wizard/step3', { theme: selected });
+      await patchStep3({ theme: selected });
       
       // Yahan ab koi condition nahi, seedha Step-4 par bhejein
       navigate('/card/wizard/step-4'); 

@@ -22,10 +22,7 @@ export function CardDisplayQuickActions({ quickActions }) {
       {/* Container spacing for minimal icons */}
       <div className="flex flex-nowrap justify-center items-center gap-7 sm:gap-9 px-4">
         {visible.map(({ key, label, Icon, href }) => {
-          
-          {/* Naya Color Logic: Theme ko ignore kar k ham Brand Color fetch kar rahe hain */}
           const iconColor = getQuickActionColor(key);
-          
           return (
             <div key={key} className="flex flex-col items-center gap-1.5">
               <a

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiClient, apiErrorMessage } from '../../apiClient';
+import { apiErrorMessage } from '../../apiClient';
+import { getWizardState, patchStep2, uploadAvatarFile } from '../../supabase/supabaseWizard';
 import CardWrapper from '../components/CardWrapper';
 import CustomButton from '../components/CustomButton';
 import CustomInput from '../components/CustomInput';
@@ -34,7 +35,7 @@ export default function WizardStep2() {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await apiClient.get('/visithon/wizard/state');
+        const data = await getWizardState();
         if (cancelled) return;
         const s2 = data.profile?.step2 || {};
         setFullName(s2.full_name || '');
@@ -63,10 +64,8 @@ export default function WizardStep2() {
     try {
       const localUrl = URL.createObjectURL(file);
       setAvatarPreview(localUrl);
-      const fd = new FormData();
-      fd.append('file', file);
-      const { data } = await apiClient.post('/visithon/wizard/avatar', fd);
-      if (data.avatar_url) setAvatarPreview(staticUrl(data.avatar_url));
+      const publicUrl = await uploadAvatarFile(file);
+      setAvatarPreview(publicUrl);
     } catch (err) {
       setError(apiErrorMessage(err, 'Avatar upload failed.'));
       setAvatarPreview('');
@@ -84,7 +83,7 @@ export default function WizardStep2() {
     }
     setSaving(true);
     try {
-      await apiClient.patch('/visithon/wizard/step2', {
+      await patchStep2({
         full_name: fullName.trim(),
         position: position.trim(),
         company: company.trim(),

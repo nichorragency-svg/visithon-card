@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaUniversity, FaUserAlt, FaCreditCard, FaPlus, FaTrash, FaQrcode, FaChevronDown } from 'react-icons/fa';
-import { apiClient, apiErrorMessage } from '../../apiClient';
+import {
+  finalizeBankAccountsFromWizard,
+  getWizardState,
+  refreshLocalUserInfoForSession,
+} from '../../supabase/supabaseWizard';
 import CustomButton from '../components/CustomButton';
 import CustomInput from '../components/CustomInput';
 import GlassShell from '../components/GlassShell';
@@ -47,7 +51,7 @@ export default function WizardStep9() {
         if (saved) {
           setAccounts(JSON.parse(saved));
         } else {
-          const { data } = await apiClient.get('/visithon/wizard/state');
+          const data = await getWizardState();
           if (data.profile?.step9?.accounts) {
             setAccounts(data.profile.step9.accounts);
           }
@@ -87,49 +91,16 @@ export default function WizardStep9() {
         return;
       }
   
-      const fd = new FormData();
-      fd.append(
-        'accounts_json',
-        JSON.stringify(
-          accounts.map((a) => ({
-            bank_name: a.bank_name,
-            account_title: a.account_title,
-            iban: a.iban,
-          }))
-        )
-      );
-      
-      accounts.forEach((a, i) => {
-        if (a.file && a.file instanceof File) {
-          fd.append(`qr_file_${i}`, a.file);
-        }
-      });
-  
-      // 1. API Call
-      const response = await apiClient.post(`/card-auth/update-multi-bank/${info.id}`, fd);
-      
-      // DEBUGGING: Console mein check kren backend kya bhej raha hy
-      console.log("Backend Response Data:", response.data);
-  
-      // 2. Sirf tab navigate kren jab backend "ok" bhej de
-      // Kuch cases mein backend 'ok' (boolean) bhejta hy, kuch mein 'status'
-      if (response.data && (response.data.ok === true || response.data.status === "success")) {
-        
-        // Temporary data saaf kren
-        localStorage.removeItem('visithon_temp_accounts');
-        
-        // Card view pr bhej den
-        navigate(`/card/view/${info.id}`);
-        
-      } else {
-        // Backend se jo error message aye wo dikhain
-        setError(response.data?.message || "Failed to finalize card. Please try again.");
-      }
+      await finalizeBankAccountsFromWizard(accounts);
+
+      localStorage.removeItem('visithon_temp_accounts');
+      await refreshLocalUserInfoForSession();
+      navigate(`/card/view/${info.id}`);
       
     } catch (e) {
       console.error("Save Error:", e);
       // Detail error message dikhain
-      const msg = e.response?.data?.message || e.message || 'Could not save bank details.';
+      const msg = typeof e?.message === 'string' ? e.message : 'Could not save bank details.';
       setError(msg);
     } finally {
       setSaving(false);

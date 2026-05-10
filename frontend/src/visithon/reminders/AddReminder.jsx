@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
-import { apiClient, apiErrorMessage } from '../../apiClient';
+import { apiErrorMessage } from '../../apiClient';
+import { createReminder } from '../../supabase/supabaseWizard';
 import CustomButton from '../components/CustomButton';
 import CustomInput from '../components/CustomInput';
 import GlassShell from '../components/GlassShell';
@@ -34,7 +35,7 @@ export default function AddReminder() {
     }
     setSaving(true);
     try {
-      await apiClient.post('/visithon/reminders', {
+      await createReminder({
         title: title.trim(),
         date,
         time,

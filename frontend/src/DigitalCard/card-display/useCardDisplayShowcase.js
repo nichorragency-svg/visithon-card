@@ -1,5 +1,4 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
-import { API_BASE_URL } from '../../config';
 import { staticUrl } from '../../visithon/utils/staticUrl';
 import { onlyDigits } from './helpers';
 
@@ -65,9 +64,7 @@ export function useCardDisplayShowcase(user, options = {}) {
     const phoneNumber = onlyDigits(user.whatsapp || user.phone1);
     if (!phoneNumber) return;
     const imageUrl =
-      (prod.image && `${API_BASE_URL}/static/product_assets/${prod.image}`) ||
-      (prod.url && staticUrl(prod.url)) ||
-      '';
+      (prod.url && staticUrl(prod.url)) || (prod.image && staticUrl(prod.image)) || '';
     const message = `Assalam-o-Alaikum, I am interested in this product:\n\n*Product:* ${prod.name || 'N/A'}\n*Price:* ${prod.price || 'N/A'}${imageUrl ? `\n*Image:* ${imageUrl}` : ''}`;
     window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`, '_blank');
   };

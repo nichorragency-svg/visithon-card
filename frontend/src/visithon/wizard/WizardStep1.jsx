@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaSearch } from 'react-icons/fa';
-import { apiClient, apiErrorMessage } from '../../apiClient';
+import { apiErrorMessage } from '../../apiClient';
+import { getWizardState, patchStep1Profession } from '../../supabase/supabaseWizard';
 import CustomButton from '../components/CustomButton';
 import GlassShell from '../components/GlassShell';
 import { STEP1_PROFESSIONS } from './constants';
@@ -24,7 +25,7 @@ export default function WizardStep1() {
   let cancelled = false;
   (async () => {
     try {
-      const { data } = await apiClient.get('/visithon/wizard/state');
+      const data = await getWizardState();
       if (cancelled) return;
 
       // Debugging k lye console check kren
@@ -67,7 +68,7 @@ export default function WizardStep1() {
     }
     setSaving(true);
     try {
-      await apiClient.patch('/visithon/wizard/step1', { profession });
+      await patchStep1Profession({ profession });
       navigate('/card/wizard/step-1-feature');
     } catch (e) {
       setError(apiErrorMessage(e, 'Could not save.'));

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaEdit, FaLayerGroup, FaSignOutAlt } from 'react-icons/fa';
-import { apiClient } from '../../apiClient';
+import { supabase } from '../../supabase/client';
+import { getWizardState } from '../../supabase/supabaseWizard';
 import CustomButton from '../components/CustomButton';
 import GlassShell from '../components/GlassShell';
 
@@ -14,7 +15,7 @@ export default function CardSettings() {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await apiClient.get('/visithon/wizard/state');
+        const data = await getWizardState();
         if (cancelled) return;
         const s1 = data.profile?.step1 || {};
         setShopFlag(typeof s1.shop_portfolio_enabled === 'boolean' ? s1.shop_portfolio_enabled : null);
@@ -30,7 +31,12 @@ export default function CardSettings() {
 
   const showProductServiceMgmt = shopFlag !== false;
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      if (supabase) await supabase.auth.signOut();
+    } catch {
+      /* noop */
+    }
     localStorage.removeItem('visithon_card_token');
     localStorage.removeItem('visithon_user_info');
     navigate('/card/login', { replace: true });

@@ -1,15 +1,15 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { FaArrowLeft, FaShareAlt } from 'react-icons/fa';
-import { API_BASE_URL } from '../../config';
+import { SUPABASE_CONFIGURED } from '../../config';
+import { fetchPublishedCardPayload } from '../../supabase/publicCardFetch';
 import GlassShell from '../../visithon/components/GlassShell';
 import { staticUrl } from '../../visithon/utils/staticUrl';
 
 function resolveAvatar(u) {
   if (!u) return '';
   if (u.avatar_static_path) return staticUrl(u.avatar_static_path);
-  if (u.legacy_profile_img) return `${API_BASE_URL}/static/digital_cards/${u.legacy_profile_img}`;
+  if (u.legacy_profile_img) return staticUrl(u.legacy_profile_img);
   return '';
 }
 
@@ -23,12 +23,18 @@ export default function LinkDevice() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [qrRes, userRes] = await Promise.all([
-        axios.get(`${API_BASE_URL}/card-auth/generate-qr/${userId}`),
-        axios.get(`${API_BASE_URL}/card-view/${userId}`),
-      ]);
-      setQrImage(qrRes.data.qr_image || '');
-      setUser(userRes.data.data);
+      if (!SUPABASE_CONFIGURED || !userId) {
+        setUser(null);
+        setQrImage('');
+        return;
+      }
+      const { payload } = await fetchPublishedCardPayload(String(userId).trim());
+      const u = payload?.data ?? null;
+      setUser(u);
+      const cardUrl = `${window.location.origin}/card/view/${encodeURIComponent(String(userId).trim())}`;
+      setQrImage(
+        `https://api.qrserver.com/v1/create-qr-code/?size=420x420&data=${encodeURIComponent(cardUrl)}`,
+      );
     } catch (err) {
       console.error('QR / card fetch error:', err);
     } finally {

@@ -8,7 +8,8 @@ import {
   FaStethoscope,
   FaUserMd,
 } from 'react-icons/fa';
-import { apiClient, apiErrorMessage } from '../../apiClient';
+import { apiErrorMessage } from '../../apiClient';
+import { getWizardState, patchStep4 } from '../../supabase/supabaseWizard';
 import CustomButton from '../components/CustomButton';
 import CustomInput from '../components/CustomInput';
 import GlassShell from '../components/GlassShell';
@@ -39,7 +40,7 @@ export default function WizardStep4() {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await apiClient.get('/visithon/wizard/state');
+        const data = await getWizardState();
         if (cancelled) return;
         const raw = data.profile?.step4?.items;
         setItems(Array.isArray(raw) ? raw : []);
@@ -97,7 +98,7 @@ export default function WizardStep4() {
     setError('');
     setSaving(true);
     try {
-      await apiClient.patch('/visithon/wizard/step4', { items });
+      await patchStep4({ items });
       navigate('/card/wizard/step-5');
     } catch (e) {
       setError(apiErrorMessage(e, 'Could not save services.'));

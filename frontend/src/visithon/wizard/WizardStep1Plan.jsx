@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaCheck } from 'react-icons/fa';
-import { apiClient, apiErrorMessage } from '../../apiClient';
+import { apiErrorMessage } from '../../apiClient';
+import { getWizardState, patchStep1PricingPlan } from '../../supabase/supabaseWizard';
 import CustomButton from '../components/CustomButton';
 import GlassShell from '../components/GlassShell';
 
@@ -63,13 +64,13 @@ export default function WizardStep1Plan() {
     let cancelled = false;
     (async () => {
       try {
-        const { data } = await apiClient.get('/visithon/wizard/state');
+        const data = await getWizardState();
         if (cancelled) return;
         const s1 = data.profile?.step1 || {};
         setShopOn(s1.shop_portfolio_enabled === true);
         const saved = String(s1.pricing_plan || '').toLowerCase();
         if (['free', 'basic', 'pro'].includes(saved)) setPlan(saved);
-        else setPlan('pro');
+        else setPlan('free');
       } catch (e) {
         if (!cancelled) setError(apiErrorMessage(e, 'Could not load profile.'));
       } finally {
@@ -88,7 +89,7 @@ export default function WizardStep1Plan() {
     }
   }, [loading, shopOn, navigate]);
 
-  const defaultPlan = useMemo(() => PLANS.find((p) => p.id === 'pro'), []);
+  const defaultPlan = useMemo(() => PLANS.find((p) => p.id === 'free'), []);
 
   const onContinue = async () => {
     setError('');
@@ -99,7 +100,7 @@ export default function WizardStep1Plan() {
     }
     setSaving(true);
     try {
-      await apiClient.patch('/visithon/wizard/step1/pricing-plan', { pricing_plan: pick });
+      await patchStep1PricingPlan({ pricing_plan: pick });
       navigate('/card/wizard/step-2');
     } catch (e) {
       setError(apiErrorMessage(e, 'Could not save plan.'));

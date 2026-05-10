@@ -200,7 +200,7 @@ export default function CardDisplayView() {
 
             {tileRowShowActions ? (
               <CardDisplayActionTiles
-                userId={userId}
+                user={user}
                 tileRowShowSave={tileRowShowSave}
                 showWa={showWa}
                 waDigits={waDigits}
@@ -247,12 +247,7 @@ export default function CardDisplayView() {
         accentInlineStyle={accentInlineStyle}
       />
 
-      <CardDisplayAccountModal
-        open={accountModalOpen}
-        onClose={() => setAccountModalOpen(false)}
-        user={user}
-        onSaved={fetchCard}
-      />
+      <CardDisplayAccountModal open={accountModalOpen} onClose={() => setAccountModalOpen(false)} user={user} />
 
       <CardDisplayServicesModal
         open={servicesModalOpen}
