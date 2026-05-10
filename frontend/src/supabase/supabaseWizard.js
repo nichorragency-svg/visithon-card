@@ -1,5 +1,5 @@
 import { ensureSupabase } from './client';
-import { sanitizeSocialPaste } from '../DigitalCard/card-display/helpers';
+import { sanitizeSocialPaste } from '../utils/socialPasteSanitize';
 import { THEME_STYLE_BY_ID } from '../visithon/wizard/themeVisuals';
 
 /** @typedef {import('@supabase/supabase-js').SupabaseClient} SupabaseClient */
@@ -12,6 +12,19 @@ function throwReadable(e, fb) {
     fb ||
     'Request failed.';
   throw new Error(msg);
+}
+
+/** Avoid UI stuck on “Saving…” when the network or Supabase never responds. */
+async function withTimeout(run, ms, message) {
+  let timer;
+  const timeout = new Promise((_, rej) => {
+    timer = setTimeout(() => rej(new Error(message)), ms);
+  });
+  try {
+    return await Promise.race([run(), timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export async function getSessionUserId() {
@@ -51,25 +64,31 @@ function mergeProfileBlob(prev, mutatorFn) {
  * Mutate nested `profiles.profile` JSON.
  */
 export async function mutateProfile(mutator) {
-  const uid = await getSessionUserId();
-  const row = await fetchProfile(uid);
-  const prevProfile =
-    row?.profile != null && typeof row.profile === 'object' && !Array.isArray(row.profile)
-      ? row.profile
-      : {};
-  const next = mergeProfileBlob(prevProfile, mutator);
-  const { error } = await ensureSupabase()
-    .from('profiles')
-    .upsert(
-      {
-        id: uid,
-        full_name: row?.full_name != null ? row.full_name : '',
-        profile: next,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'id' },
-    );
-  if (error) throwReadable(error, 'Could not save.');
+  await withTimeout(
+    async () => {
+      const uid = await getSessionUserId();
+      const row = await fetchProfile(uid);
+      const prevProfile =
+        row?.profile != null && typeof row.profile === 'object' && !Array.isArray(row.profile)
+          ? row.profile
+          : {};
+      const next = mergeProfileBlob(prevProfile, mutator);
+      const { error } = await ensureSupabase()
+        .from('profiles')
+        .upsert(
+          {
+            id: uid,
+            full_name: row?.full_name != null ? row.full_name : '',
+            profile: next,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'id' },
+        );
+      if (error) throwReadable(error, 'Could not save.');
+    },
+    28000,
+    'Save timed out. Check your internet connection or Supabase status, then try again.',
+  );
 }
 
 /** --- Themes --- */

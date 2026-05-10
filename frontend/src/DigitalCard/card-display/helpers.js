@@ -1,5 +1,8 @@
 import { staticUrl } from '../../visithon/utils/staticUrl';
+import { sanitizeSocialPaste } from '../../utils/socialPasteSanitize';
 import { SOCIAL_DISPLAY_ORDER } from './styles';
+
+export { sanitizeSocialPaste };
 
 export function onlyDigits(v) {
   return String(v || '').replace(/\D/g, '');
@@ -10,21 +13,6 @@ export function withHttp(url) {
   if (!u) return '';
   if (/^https?:\/\//i.test(u)) return u;
   return `https://${u}`;
-}
-
-/**
- * Clipboard / rich-text paste often injects BOM, zero-width, bidi overrides, or fullwidth punctuation
- * — those break URL parsing or query strings (`profile.php?id=…`).
- */
-export function sanitizeSocialPaste(raw) {
-  return String(raw || '')
-    .replace(/[\u0000\uFEFF]/g, '')
-    .replace(/[\u200B-\u200F\u2066-\u2069\u202A-\u202E]/g, '')
-    .replace(/\uFF1F/g, '?')
-    .replace(/\uFF1A/g, ':')
-    .replace(/\uFF0F/g, '/')
-    .replace(/\uFF06/g, '&')
-    .trim();
 }
 
 /**
@@ -134,7 +122,7 @@ export function canonicalSocialUrl(platformKey, raw) {
 
     if (host === 'youtube.com' || host === 'youtu.be' || host.endsWith('.youtube.com')) {
       if (host === 'youtu.be' && segments.length >= 1) return urlStr;
-      if (host === 'youtube.com' && isBareHost()) return '';
+      /** Site root still shows icon (youtube.com/@… home-style); avoids “missing YouTube chip” confusion. */
       return urlStr;
     }
 
