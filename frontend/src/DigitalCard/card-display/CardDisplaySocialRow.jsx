@@ -1,7 +1,7 @@
 import React from 'react';
 import { SOCIAL_STYLES } from './styles';
 import { socialIcon } from './socialIconMap';
-import { canonicalSocialUrl } from './helpers';
+import { effectiveSocialHref } from './helpers';
 
 export function CardDisplaySocialRow({ entries }) {
   if (!entries.length) return null;
@@ -13,7 +13,7 @@ export function CardDisplaySocialRow({ entries }) {
       */}
       <div className="flex flex-wrap justify-center items-center gap-5 sm:gap-6 px-4">
         {entries.map(([key, url]) => {
-          const href = canonicalSocialUrl(key, url);
+          const href = effectiveSocialHref(key, url);
           if (!href) return null;
           const Icon = socialIcon[key] || socialIcon.custom;
           const stSoc = SOCIAL_STYLES[key] || SOCIAL_STYLES.custom;

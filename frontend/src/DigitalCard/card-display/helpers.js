@@ -138,6 +138,41 @@ export function canonicalSocialUrl(platformKey, raw) {
   }
 }
 
+/** Hostnames we treat as acceptable Facebook outbound links after URL parse. */
+function isLikelyFacebookHostname(hostname) {
+  const raw = String(hostname || '').toLowerCase();
+  if (!raw) return false;
+  const h = raw.startsWith('www.') ? raw.slice(4) : raw;
+  return (
+    h === 'facebook.com' ||
+    h === 'm.facebook.com' ||
+    h === 'fb.com' ||
+    h === 'fb.me' ||
+    h.endsWith('.facebook.com') ||
+    h.endsWith('.fb.com')
+  );
+}
+
+/**
+ * Card display uses this instead of canonical alone so Facebook never drops when subtle parse/quirk occurs.
+ */
+export function effectiveSocialHref(platformKey, raw) {
+  const primary = canonicalSocialUrl(platformKey, raw);
+  if (primary) return primary;
+  if (platformKey !== 'facebook') return '';
+  const t = sanitizeSocialPaste(String(raw || '').trim());
+  if (!t) return '';
+  try {
+    const href = withHttp(t);
+    const u = new URL(href);
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return '';
+    if (!isLikelyFacebookHostname(u.hostname)) return '';
+    return u.href;
+  } catch {
+    return '';
+  }
+}
+
 export function hexToRgb(hex) {
   const h = String(hex || '').trim().replace('#', '');
   if (!/^[0-9a-fA-F]{6}$/.test(h)) return null;

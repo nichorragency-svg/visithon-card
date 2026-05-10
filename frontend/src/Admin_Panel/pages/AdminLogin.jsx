@@ -12,6 +12,9 @@ function detailMessage(detail) {
   return 'Something went wrong.';
 }
 
+const SHOW_SELF_SERVICE_REGISTER =
+  String(process.env.REACT_APP_ADMIN_SHOW_REGISTER || '').toLowerCase() === 'true';
+
 export default function AdminLogin() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -131,92 +134,105 @@ export default function AdminLogin() {
             </p>
           </form>
 
-          <div className="mt-6 border-t border-white/10 pt-6">
-            <button
-              type="button"
-              onClick={() => {
-                setShowCreate((v) => !v);
-                setCErr('');
-              }}
-              className="w-full rounded-lg border border-white/15 bg-white/5 py-2.5 text-sm font-medium text-white/90 hover:bg-white/10"
-            >
-              {showCreate ? 'Hide create admin' : 'Create admin'}
-            </button>
-
-            {showCreate ? (
-              <form onSubmit={onCreateAdmin} className="mt-5 space-y-3">
-                <p className="text-xs text-white/40">
-                  First admin: leave bootstrap secret empty. Later admins need{' '}
-                  <code className="rounded bg-black/40 px-1 text-white/60">ADMIN_BOOTSTRAP_SECRET</code> in server .env
-                  and same value below.
-                </p>
-                <div>
-                  <label className="block text-xs font-medium uppercase tracking-wider text-white/40">Name (optional)</label>
-                  <input
-                    type="text"
-                    value={cName}
-                    onChange={(e) => setCName(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-white outline-none focus:border-teal-500/50"
-                    autoComplete="off"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium uppercase tracking-wider text-white/40">Email</label>
-                  <input
-                    type="email"
-                    required
-                    value={cEmail}
-                    onChange={(e) => setCEmail(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-white outline-none focus:border-teal-500/50"
-                    autoComplete="off"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium uppercase tracking-wider text-white/40">Password (min 8)</label>
-                  <input
-                    type="password"
-                    required
-                    minLength={8}
-                    value={cPassword}
-                    onChange={(e) => setCPassword(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-white outline-none focus:border-teal-500/50"
-                    autoComplete="new-password"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium uppercase tracking-wider text-white/40">Confirm password</label>
-                  <input
-                    type="password"
-                    required
-                    value={cConfirm}
-                    onChange={(e) => setCConfirm(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-white outline-none focus:border-teal-500/50"
-                    autoComplete="new-password"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium uppercase tracking-wider text-white/40">
-                    Bootstrap secret (if admins already exist)
-                  </label>
-                  <input
-                    type="password"
-                    value={cBootstrap}
-                    onChange={(e) => setCBootstrap(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-white outline-none focus:border-teal-500/50"
-                    autoComplete="off"
-                    placeholder="Only when adding 2nd+ admin"
-                  />
-                </div>
-                {cErr ? <p className="text-sm text-rose-400">{cErr}</p> : null}
+          <div className="mt-6 border-t border-white/10 pt-6 space-y-2">
+            {!SHOW_SELF_SERVICE_REGISTER ? (
+              <p className="text-xs leading-relaxed text-white/45">
+                <strong className="text-white/60">Super admin only:</strong> use the email &amp; password from your server-side
+                account. Forgot password → reset via backend:{' '}
+                <code className="rounded bg-black/40 px-1 text-[11px] text-teal-200/90">
+                  python scripts/create_visithon_admin.py --reset you@example.com NewPassword123
+                </code>
+                . Creating extra admins here is intentionally hidden so you don’t make a duplicate by mistake.
+              </p>
+            ) : (
+              <>
                 <button
-                  type="submit"
-                  disabled={cLoading}
-                  className="w-full rounded-lg bg-white/15 py-2.5 text-sm font-medium text-white hover:bg-white/20 disabled:opacity-50"
+                  type="button"
+                  onClick={() => {
+                    setShowCreate((v) => !v);
+                    setCErr('');
+                  }}
+                  className="w-full rounded-lg border border-white/15 bg-white/5 py-2.5 text-sm font-medium text-white/90 hover:bg-white/10"
                 >
-                  {cLoading ? 'Creating…' : 'Create admin account'}
+                  {showCreate ? 'Hide create admin' : 'Create admin'}
                 </button>
-              </form>
-            ) : null}
+
+                {showCreate ? (
+                  <form onSubmit={onCreateAdmin} className="mt-5 space-y-3">
+                    <p className="text-xs text-white/40">
+                      First admin: leave bootstrap secret empty. Later admins need{' '}
+                      <code className="rounded bg-black/40 px-1 text-white/60">ADMIN_BOOTSTRAP_SECRET</code> in server .env +{' '}
+                      <code className="rounded bg-black/40 px-1 text-white/60">ADMIN_REGISTER_PUBLIC=true</code>.
+                    </p>
+                    <div>
+                      <label className="block text-xs font-medium uppercase tracking-wider text-white/40">Name (optional)</label>
+                      <input
+                        type="text"
+                        value={cName}
+                        onChange={(e) => setCName(e.target.value)}
+                        className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-white outline-none focus:border-teal-500/50"
+                        autoComplete="off"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium uppercase tracking-wider text-white/40">Email</label>
+                      <input
+                        type="email"
+                        required
+                        value={cEmail}
+                        onChange={(e) => setCEmail(e.target.value)}
+                        className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-white outline-none focus:border-teal-500/50"
+                        autoComplete="off"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium uppercase tracking-wider text-white/40">Password (min 8)</label>
+                      <input
+                        type="password"
+                        required
+                        minLength={8}
+                        value={cPassword}
+                        onChange={(e) => setCPassword(e.target.value)}
+                        className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-white outline-none focus:border-teal-500/50"
+                        autoComplete="new-password"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium uppercase tracking-wider text-white/40">Confirm password</label>
+                      <input
+                        type="password"
+                        required
+                        value={cConfirm}
+                        onChange={(e) => setCConfirm(e.target.value)}
+                        className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-white outline-none focus:border-teal-500/50"
+                        autoComplete="new-password"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium uppercase tracking-wider text-white/40">
+                        Bootstrap secret (if admins already exist)
+                      </label>
+                      <input
+                        type="password"
+                        value={cBootstrap}
+                        onChange={(e) => setCBootstrap(e.target.value)}
+                        className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-white outline-none focus:border-teal-500/50"
+                        autoComplete="off"
+                        placeholder="Only when adding 2nd+ admin"
+                      />
+                    </div>
+                    {cErr ? <p className="text-sm text-rose-400">{cErr}</p> : null}
+                    <button
+                      type="submit"
+                      disabled={cLoading}
+                      className="w-full rounded-lg bg-white/15 py-2.5 text-sm font-medium text-white hover:bg-white/20 disabled:opacity-50"
+                    >
+                      {cLoading ? 'Creating…' : 'Create admin account'}
+                    </button>
+                  </form>
+                ) : null}
+              </>
+            )}
           </div>
         </div>
       </div>

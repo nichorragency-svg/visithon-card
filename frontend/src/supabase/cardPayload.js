@@ -1,3 +1,5 @@
+import { sanitizeSocialPaste } from '../utils/socialPasteSanitize';
+
 /** Build public-card view model from profiles row (+ optional theme row). Mirrors backend/card_view loosely. */
 
 const SOCIAL_KEYS = ['facebook', 'instagram', 'linkedin', 'youtube', 'twitter', 'custom'];
@@ -46,7 +48,7 @@ export function buildCardPayload(profileRow, themeRow) {
   for (const k of SOCIAL_KEYS) {
     const block = s5Raw[k];
     if (block && typeof block === 'object' && block.enabled && String(block.url || '').trim()) {
-      social[k] = String(block.url).trim();
+      social[k] = sanitizeSocialPaste(String(block.url || '')).trim();
     }
   }
 

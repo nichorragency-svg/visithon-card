@@ -21,6 +21,11 @@ _bearer = HTTPBearer(auto_error=False)
 ADMIN_SECRET = os.getenv("ADMIN_JWT_SECRET", "VISITHON_ADMIN_CHANGE_ME_IN_PRODUCTION")
 ADMIN_ALGORITHM = "HS256"
 ADMIN_TOKEN_EXPIRE_MINUTES = int(os.getenv("ADMIN_JWT_EXPIRE_MINUTES", str(60 * 8)))
+ADMIN_REGISTER_PUBLIC = os.getenv("ADMIN_REGISTER_PUBLIC", "false").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+)
 
 # Mirrors card bcrypt format (utf-8 string hashes)
 def _verify_password(plain: str, hashed: str) -> bool:
@@ -68,7 +73,22 @@ async def admin_login(data: dict = Body(...)):
 
 @router.post("/register")
 async def admin_register(data: dict = Body(...)):
-    """Create first admin without secret; add more admins with ADMIN_BOOTSTRAP_SECRET + bootstrap_secret."""
+    """
+    Disabled unless ADMIN_REGISTER_PUBLIC=true (use scripts/create_visithon_admin.py by default).
+
+    First admin: no bootstrap secret required when collection is empty and public register is enabled.
+    More admins: ADMIN_BOOTSTRAP_SECRET + bootstrap_secret in body.
+    """
+    if not ADMIN_REGISTER_PUBLIC:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Self-service admin registration is disabled. "
+                "Set ADMIN_REGISTER_PUBLIC=true on the API server temporarily, or create/reset admins with "
+                "python scripts/create_visithon_admin.py"
+            ),
+        )
+
     email = str(data.get("email") or "").lower().strip()
     password = str(data.get("password") or "")
     name = str(data.get("name") or "").strip()
