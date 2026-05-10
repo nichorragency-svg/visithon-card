@@ -52,7 +52,11 @@ function mergeProfileBlob(prev, mutatorFn) {
 export async function mutateProfile(mutator) {
   const uid = await getSessionUserId();
   const row = await fetchProfile(uid);
-  const next = mergeProfileBlob(row?.profile, mutator);
+  const prevProfile =
+    row?.profile != null && typeof row.profile === 'object' && !Array.isArray(row.profile)
+      ? row.profile
+      : {};
+  const next = mergeProfileBlob(prevProfile, mutator);
   const { error } = await ensureSupabase()
     .from('profiles')
     .upsert(
@@ -210,7 +214,10 @@ export function normalizeStep5Social(blob) {
     if (b && typeof b === 'object') {
       out[k] = {
         enabled: !!b.enabled,
-        url: typeof b.url === 'string' ? b.url.trim().slice(0, 500) : '',
+        url:
+          typeof b.url === 'string'
+            ? b.url.trim().replace(/\u0000/g, '').slice(0, 500)
+            : '',
       };
     }
   }
