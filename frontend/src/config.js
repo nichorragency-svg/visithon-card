@@ -11,9 +11,19 @@ const sbUrlRaw = (process.env.REACT_APP_SUPABASE_URL || '').trim();
  * Set `REACT_APP_API_BASE_URL` or `REACT_APP_API_URL` (same value). Not the Vercel frontend URL.
  */
 export const API_BASE_URL = (() => {
-  if (rawLegacyApi.length > 0) return rawLegacyApi.replace(/\/$/, '');
-  if (process.env.NODE_ENV === 'development') return 'http://127.0.0.1:8000';
-  return '';
+  // Agar legacy API di gayi hy toh wo use kare
+  if (typeof rawLegacyApi !== 'undefined' && rawLegacyApi.length > 0) {
+    return rawLegacyApi.replace(/\/$/, '');
+  }
+
+  // Agar hum local laptop par kaam kar rahe hain
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://127.0.0.1:8000';
+  }
+
+  // Live Server (Production) ke liye aapka DigitalOcean IP
+  // Agar aap domain lagayenge toh bas yahan IP ki jagah domain likh dena
+  return 'http://159.65.138.9:8000';
 })();
 
 export const SUPABASE_URL = sbUrlRaw.replace(/\/$/, '');
