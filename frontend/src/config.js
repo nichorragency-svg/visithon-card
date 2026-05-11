@@ -1,9 +1,14 @@
-const rawLegacyApi = (process.env.REACT_APP_API_BASE_URL || '').trim();
+/** Admin FastAPI — Vercel pe kabhi `REACT_APP_API_URL` naam se bhi save hota hai. */
+const rawLegacyApi = (
+  process.env.REACT_APP_API_BASE_URL ||
+  process.env.REACT_APP_API_URL ||
+  ''
+).trim();
 const sbUrlRaw = (process.env.REACT_APP_SUPABASE_URL || '').trim();
 
 /**
  * Legacy FastAPI base URL — only used by the optional Admin Panel (`/admin/*`).
- * Leave empty when you use Supabase for the Visithon card app.
+ * Set `REACT_APP_API_BASE_URL` or `REACT_APP_API_URL` (same value). Not the Vercel frontend URL.
  */
 export const API_BASE_URL = (() => {
   if (rawLegacyApi.length > 0) return rawLegacyApi.replace(/\/$/, '');

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../config';
 import { ADMIN_TOKEN_KEY } from '../constants';
 
@@ -43,7 +43,7 @@ export default function AdminLogin() {
       const base = String(API_BASE_URL || '').trim();
       if (!base) {
         setErr(
-          'Admin API URL missing. In Vercel (or .env) set REACT_APP_API_BASE_URL to your FastAPI root URL (no trailing slash), e.g. https://your-api.onrender.com — then rebuild the frontend. Local dev default is http://127.0.0.1:8000 only when running npm start.',
+          'Admin API URL missing. Vercel → Environment Variables → set REACT_APP_API_BASE_URL or REACT_APP_API_URL = FastAPI root (https://…), NOT visithon-card.vercel.app — then Redeploy. Local: npm start uses http://127.0.0.1:8000.',
         );
         return;
       }
@@ -107,6 +107,12 @@ export default function AdminLogin() {
         <div className="rounded-2xl border border-white/10 bg-[#12151c] p-8 shadow-2xl shadow-black/60">
           <h1 className="text-xl font-semibold tracking-tight text-white">Visithon Admin</h1>
           <p className="mt-1 text-sm text-white/45">Restricted access · admins collection only</p>
+          <p className="mt-2 break-all text-[11px] leading-snug text-white/35">
+            <span className="text-white/50">API base (env):</span>{' '}
+            {String(API_BASE_URL || '').trim() || (
+              <span className="text-amber-200/85">empty — address bar wala Vercel URL yahan mat lagao</span>
+            )}
+          </p>
 
           <form onSubmit={onSubmit} className="mt-8 space-y-4">
             <div>
@@ -147,19 +153,12 @@ export default function AdminLogin() {
             >
               {loading ? 'Logging in…' : 'Login'}
             </button>
-
-            <p className="text-center text-sm text-white/45">
-              <Link to="/admin/forgot-password" className="text-teal-400/90 hover:text-teal-300 underline-offset-2 hover:underline">
-                Forgot password?
-              </Link>
-            </p>
           </form>
 
           <div className="mt-6 border-t border-white/10 pt-6 space-y-2">
             {!SHOW_SELF_SERVICE_REGISTER ? (
               <p className="text-xs leading-relaxed text-white/45">
-                <strong className="text-white/60">Super admin only:</strong> use the email &amp; password from your server-side
-                account. Forgot password → reset via backend:{' '}
+                <strong className="text-white/60">Super admin only:</strong> Mongo admins email/password. Reset server par:{' '}
                 <code className="rounded bg-black/40 px-1 text-[11px] text-teal-200/90">
                   python scripts/create_visithon_admin.py --reset you@example.com NewPassword123
                 </code>
