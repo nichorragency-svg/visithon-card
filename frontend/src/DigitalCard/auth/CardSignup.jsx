@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaUser, FaEnvelope, FaLock, FaGoogle, FaArrowRight } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaLock, FaGoogle, FaArrowRight, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { apiErrorMessage } from '../../apiClient';
 import { supabase } from '../../supabase/client';
@@ -17,6 +17,8 @@ const CardSignup = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -42,11 +44,13 @@ const CardSignup = () => {
     setLoading(true);
     try {
       const fn = formData.fullName.trim();
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
       const { data, error: signErr } = await supabase.auth.signUp({
         email: formData.email.trim(),
         password: formData.password,
         options: {
           data: { full_name: fn },
+          emailRedirectTo: origin ? `${origin}/card/login` : undefined,
         },
       });
       if (signErr) throw signErr;
@@ -102,23 +106,39 @@ const CardSignup = () => {
           <div className="auth-input-group">
             <FaLock className="input-icon" />
             <input
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               name="password"
               placeholder="Create Password"
               onChange={handleChange}
               required
             />
+            <button
+              type="button"
+              className="password-toggle-icon"
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+            </button>
           </div>
 
           <div className="auth-input-group">
             <FaLock className="input-icon" />
             <input
-              type="password"
+              type={showConfirmPassword ? 'text' : 'password'}
               name="confirmPassword"
               placeholder="Confirm Password"
               onChange={handleChange}
               required
             />
+            <button
+              type="button"
+              className="password-toggle-icon"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+            >
+              {showConfirmPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+            </button>
           </div>
 
           <button type="submit" className="auth-btn" disabled={loading}>

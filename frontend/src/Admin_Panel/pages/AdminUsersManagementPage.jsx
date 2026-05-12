@@ -32,7 +32,12 @@ export default function AdminUsersManagementPage() {
       const { data } = await axios.get(`${base}/admin/all-cards`, { headers: authHeaders });
       setRows(Array.isArray(data) ? data : []);
     } catch (e) {
-      setErr(e?.response?.data?.detail || e?.message || 'Load failed.');
+      let msg = e?.response?.data?.detail || e?.message || 'Load failed.';
+      if (typeof msg !== 'string') msg = String(msg);
+      if (!e?.response && base && typeof window !== 'undefined') {
+        msg += ` If the browser blocked the request (CORS), add to API server .env: CORS_ALLOWED_ORIGINS=${window.location.origin}`;
+      }
+      setErr(msg);
       setRows([]);
     } finally {
       setLoading(false);
@@ -83,7 +88,7 @@ export default function AdminUsersManagementPage() {
         </div>
         <button
           type="button"
-          onClick={() => navigate('/card/signup')}
+          onClick={() => navigate('/admin/create-card-user')}
           className="shrink-0 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-900/40 transition hover:opacity-95"
         >
           Add new user +

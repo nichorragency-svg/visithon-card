@@ -8,6 +8,7 @@ import AdminSection from './pages/AdminSection';
 import TemplatesThemesPage from './pages/TemplatesThemesPage';
 import CardManagementPage from './pages/CardManagementPage';
 import AdminUsersManagementPage from './pages/AdminUsersManagementPage';
+import AdminCreateCardUserPage from './pages/AdminCreateCardUserPage';
 import AdminManualPaymentsPage from './pages/AdminManualPaymentsPage';
 import AdminPlatformPaymentSettings from './pages/AdminPlatformPaymentSettings';
 
@@ -33,6 +34,7 @@ export default function AdminRoutes() {
         <Route index element={<AdminDashboard />} />
         {/* Card grid UI */}
         <Route path="users" element={<AdminUsersManagementPage />} />
+        <Route path="create-card-user" element={<AdminCreateCardUserPage />} />
 
         <Route path="cards" element={<CardManagementPage />} />
 

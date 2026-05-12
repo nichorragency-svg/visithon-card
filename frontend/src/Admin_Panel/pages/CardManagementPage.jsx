@@ -155,7 +155,7 @@ export default function CardManagementPage() {
         </div>
         <button
           type="button"
-          onClick={() => navigate('/card/signup')}
+          onClick={() => navigate('/admin/create-card-user')}
           className="shrink-0 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-900/40 transition hover:opacity-95"
         >
           Create new card +

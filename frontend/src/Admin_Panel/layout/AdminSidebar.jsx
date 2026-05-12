@@ -165,14 +165,14 @@ export default function AdminSidebar() {
           <div className="mt-3 grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() => navigate('/admin/cards')}
+              onClick={() => navigate('/admin/create-card-user')}
               className="rounded-lg border border-white/10 bg-[#0c0e14]/80 px-2 py-2 text-left text-[10px] font-medium leading-tight text-white/85 hover:bg-white/[0.06]"
             >
               <span className="text-violet-300">+ </span>Create New Card
             </button>
             <button
               type="button"
-              onClick={() => navigate('/admin/users')}
+              onClick={() => navigate('/admin/create-card-user')}
               className="rounded-lg border border-white/10 bg-[#0c0e14]/80 px-2 py-2 text-left text-[10px] font-medium leading-tight text-white/85 hover:bg-white/[0.06]"
             >
               <span className="text-violet-300">+ </span>Add New User

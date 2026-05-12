@@ -6,24 +6,30 @@ const rawLegacyApi = (
 ).trim();
 const sbUrlRaw = (process.env.REACT_APP_SUPABASE_URL || '').trim();
 
+function defaultProdApiBase() {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+  const { protocol, hostname } = window.location;
+  return `${protocol}//${hostname}:8000`;
+}
+
 /**
  * Legacy FastAPI base URL — only used by the optional Admin Panel (`/admin/*`).
  * Set `REACT_APP_API_BASE_URL` or `REACT_APP_API_URL` (same value). Not the Vercel frontend URL.
+ * Production without env: same hostname as the page, port 8000 (Nginx :80 + Uvicorn :8000).
  */
 export const API_BASE_URL = (() => {
-  // Agar legacy API di gayi hy toh wo use kare
   if (typeof rawLegacyApi !== 'undefined' && rawLegacyApi.length > 0) {
     return rawLegacyApi.replace(/\/$/, '');
   }
 
-  // Agar hum local laptop par kaam kar rahe hain
   if (process.env.NODE_ENV === 'development') {
     return 'http://127.0.0.1:8000';
   }
 
-  // Live Server (Production) ke liye aapka DigitalOcean IP
-  // Agar aap domain lagayenge toh bas yahan IP ki jagah domain likh dena
-  return 'http://159.65.138.9:8000';
+  const derived = defaultProdApiBase();
+  return derived || 'http://159.65.138.9:8000';
 })();
 
 export const SUPABASE_URL = sbUrlRaw.replace(/\/$/, '');
