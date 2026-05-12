@@ -18,7 +18,7 @@ import { CardDisplayServicesModal } from './CardDisplayServicesModal';
 import { CardDisplayShowcase } from './CardDisplayShowcase';
 import { CardDisplaySocialRow } from './CardDisplaySocialRow';
 import { buildQuickActions } from './quickActions';
-import { onlyDigits, sortSocialEntries, withHttp } from './helpers';
+import { onlyDigits, resolveAvatar, sortSocialEntries, withHttp } from './helpers';
 import { useCardDisplayData } from './useCardDisplayData';
 import { useCardDisplayShowcase } from './useCardDisplayShowcase';
 import { getCardDisplayTheme } from './useCardDisplayTheme';
@@ -281,6 +281,12 @@ export default function CardDisplayView() {
                 onToggleWalletSave={toggleWalletSave}
                 walletSavedCount={walletSavedCount}
                 user={user}
+                userId={userId}
+                profileImageUrl={
+                  user && (user.avatar_static_path || user.legacy_profile_img)
+                    ? resolveAvatar(user)
+                    : ''
+                }
                 tileRowShowSave={tileRowShowSave}
                 showWa={showWa}
                 waDigits={waDigits}

@@ -2,12 +2,22 @@ import React, { useState } from 'react';
 import { FaPhoneAlt, FaQrcode, FaCopy, FaTimes, FaUniversity } from 'react-icons/fa';
 import { triggerVCardDownload } from '../utils/downloadVCard';
 import { staticUrl } from '../../visithon/utils/staticUrl';
+import { resolveAvatar } from '../card-display/helpers';
 
 const ActionButtons = ({ user }) => {
     const [payModal, setPayModal] = useState(false);
 
     const handleSaveContact = () => {
-        triggerVCardDownload(user);
+        const uid = String(user?.id || user?._id || '').trim();
+        const cardUrl =
+            typeof window !== 'undefined' && uid
+                ? `${window.location.origin}/card/view/${encodeURIComponent(uid)}`
+                : '';
+        const profileImageUrl =
+            user && (user.avatar_static_path || user.legacy_profile_img)
+                ? resolveAvatar(user)
+                : '';
+        void triggerVCardDownload(user, { cardUrl, profileImageUrl });
     };
 
     const copyToClipboard = (text) => {

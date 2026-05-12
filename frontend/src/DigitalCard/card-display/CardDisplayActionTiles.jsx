@@ -10,6 +10,8 @@ export function CardDisplayActionTiles({
   onToggleWalletSave,
   walletSavedCount,
   user,
+  userId,
+  profileImageUrl = '',
   tileRowShowSave,
   showWa,
   waDigits,
@@ -29,6 +31,11 @@ export function CardDisplayActionTiles({
   const bookmarkInk = isWalletSaved ? '#fbbf24' : isLightTheme ? '#64748b' : '#f8fafc';
   const myCardsInk = isLightTheme ? '#0369a1' : '#7dd3fc';
 
+  const cardLiveUrl =
+    typeof window !== 'undefined' && userId
+      ? `${window.location.origin}/card/view/${encodeURIComponent(String(userId).trim())}`
+      : '';
+
   return (
     <div className="mt-8">
       <div className="flex flex-wrap items-center justify-center gap-6 px-4 sm:gap-8">
@@ -36,7 +43,12 @@ export function CardDisplayActionTiles({
         {tileRowShowSave && (
           <button
             type="button"
-            onClick={() => triggerVCardDownload(user)}
+            onClick={() =>
+              void triggerVCardDownload(user, {
+                cardUrl: cardLiveUrl,
+                profileImageUrl: String(profileImageUrl || '').trim(),
+              })
+            }
             className={bareIconClass}
             title="Save contact"
           >

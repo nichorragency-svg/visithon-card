@@ -28,7 +28,8 @@ export default function AdminRoutes() {
         }
       >
         <Route index element={<AdminDashboard />} />
-        <Route path="users" element={<AdminSection title="Users" />} />
+        {/* Card approvals / Mongo card users — same screen as sidebar "Cards" */}
+        <Route path="users" element={<CardManagementPage />} />
 
         <Route path="cards" element={<CardManagementPage />} />
 
