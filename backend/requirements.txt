@@ -9,3 +9,4 @@ vobject
 python-multipart
 pydantic[email]
 python-dotenv
+httpx

@@ -14,6 +14,7 @@ from digital_card.card_auth import hash_password
 from database import admins_collection, themes_collection
 from admin_panel.mongo_cards_source import list_mongo_admin_card_rows, set_mongo_card_status
 from admin_panel.auth_deps import ADMIN_SECRET, ADMIN_ALGORITHM, admin_from_token
+from admin_panel.supabase_provision import supabase_admin_create_confirmed_user
 
 router = APIRouter()
 
@@ -219,6 +220,25 @@ async def delete_theme(theme_id: str, _: dict = Depends(admin_from_token)):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Theme not found")
     return {"ok": True, "deleted_id": theme_id}
+
+
+@router.post("/provision-card-user")
+async def provision_card_user(data: dict = Body(...), _: dict = Depends(admin_from_token)):
+    """
+    Create a card-holder Auth user with email already confirmed (no inbox step).
+    Requires SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY on the API server.
+    User can then log in at /card/login and complete the wizard.
+    """
+    email = str(data.get("email") or "").lower().strip()
+    password = str(data.get("password") or "")
+    full_name = str(data.get("full_name") or data.get("name") or "").strip()
+    if not email or not password:
+        raise HTTPException(status_code=400, detail="email and password are required")
+    if len(password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+    user = await supabase_admin_create_confirmed_user(email=email, password=password, full_name=full_name or email.split("@")[0])
+    uid = user.get("id") or user.get("user", {}).get("id")
+    return {"ok": True, "user_id": uid, "email": email}
 
 
 @router.get("/all-cards")

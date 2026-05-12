@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,30 +24,38 @@ from digital_card import (
 app = FastAPI(title="Visithon Card API")
 
 
-def _cors_settings() -> tuple[list[str], bool]:
+def _cors_settings() -> tuple[list[str], bool, str | None]:
     """
-    Browser fetches (admin API, vCard photo fetch from /static/, Supabase) need ACAO headers
-    when the page origin differs from the API (e.g. frontend :80 / Vercel → API :8000).
+    Browser fetches (admin API, vCard photo fetch from /static/) need ACAO when the page
+    origin differs from the API (e.g. http://IP → http://IP:8000).
 
-    Wildcard origin must not be combined with allow_credentials=True (browser spec).
-    Set CORS_ALLOWED_ORIGINS for production, comma-separated, e.g.:
-      https://visithon.com,https://www.visithon.com,http://localhost:3000
+    Wildcard * must not be combined with allow_credentials=True (browser spec).
+
+    - CORS_ALLOWED_ORIGINS: comma- or newline-separated exact origins (no trailing slash).
+    - CORS_ALLOW_ORIGIN_REGEX: optional; origins matching this regex are also allowed.
+      Example for one host: ^https?://159\\.65\\.138\\.9(:\\d+)?$
     """
     raw = os.getenv("CORS_ALLOWED_ORIGINS", "").strip()
-    if not raw:
-        return (["*"], False)
-    origins = [o.strip() for o in raw.split(",") if o.strip()]
-    if not origins:
-        return (["*"], False)
+    regex = os.getenv("CORS_ALLOW_ORIGIN_REGEX", "").strip() or None
     creds = os.getenv("CORS_ALLOW_CREDENTIALS", "true").strip().lower() in ("1", "true", "yes")
-    return (origins, creds)
+
+    if not raw and not regex:
+        return (["*"], False, None)
+
+    origins = [o.strip() for o in raw.replace("\n", ",").split(",") if o.strip()]
+    if not origins and regex:
+        return ([], creds, regex)
+    if not origins:
+        return (["*"], False, None)
+    return (origins, creds, regex)
 
 
-_cors_origins, _cors_credentials = _cors_settings()
+_cors_origins, _cors_credentials, _cors_origin_regex = _cors_settings()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
     allow_credentials=_cors_credentials,
+    allow_origin_regex=_cors_origin_regex,
     allow_methods=["*"],
     allow_headers=["*"],
 )
