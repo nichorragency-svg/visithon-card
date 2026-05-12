@@ -7,19 +7,16 @@ from datetime import datetime, timedelta
 import bcrypt
 from bson import ObjectId
 from fastapi import APIRouter, Body, Depends, HTTPException
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
+from jose import jwt
 from pymongo.errors import PyMongoError
 
 from digital_card.card_auth import hash_password
 from database import admins_collection, themes_collection
+from admin_panel.mongo_cards_source import list_mongo_admin_card_rows, set_mongo_card_status
+from admin_panel.auth_deps import ADMIN_SECRET, ADMIN_ALGORITHM, admin_from_token
 
 router = APIRouter()
 
-_bearer = HTTPBearer(auto_error=False)
-
-ADMIN_SECRET = os.getenv("ADMIN_JWT_SECRET", "VISITHON_ADMIN_CHANGE_ME_IN_PRODUCTION")
-ADMIN_ALGORITHM = "HS256"
 ADMIN_TOKEN_EXPIRE_MINUTES = int(os.getenv("ADMIN_JWT_EXPIRE_MINUTES", str(60 * 8)))
 ADMIN_REGISTER_PUBLIC = os.getenv("ADMIN_REGISTER_PUBLIC", "false").strip().lower() in (
     "1",
@@ -38,18 +35,6 @@ def _admin_token(admin_id: str, email: str) -> str:
     expire = datetime.utcnow() + timedelta(minutes=ADMIN_TOKEN_EXPIRE_MINUTES)
     payload = {"sub": "admin", "role": "admin", "admin_id": admin_id, "email": email, "exp": expire}
     return jwt.encode(payload, ADMIN_SECRET, algorithm=ADMIN_ALGORITHM)
-
-
-async def admin_from_token(creds: HTTPAuthorizationCredentials | None = Depends(_bearer)) -> dict:
-    if not creds or not creds.credentials:
-        raise HTTPException(status_code=401, detail="Admin Bearer token required")
-    try:
-        payload = jwt.decode(creds.credentials, ADMIN_SECRET, algorithms=[ADMIN_ALGORITHM])
-    except JWTError as exc:
-        raise HTTPException(status_code=401, detail="Invalid or expired admin token") from exc
-    if payload.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Not an admin token")
-    return payload
 
 
 @router.post("/login")
@@ -235,23 +220,28 @@ async def delete_theme(theme_id: str, _: dict = Depends(admin_from_token)):
         raise HTTPException(status_code=404, detail="Theme not found")
     return {"ok": True, "deleted_id": theme_id}
 
-# 1. Tamam cards fetch krnay k liye
-@router.get("/all-cards")
-async def get_all_cards(token: str = Depends(_bearer)):
-    # Yahan hum check kr sakty hain k token valid hy ya nahi
-    cards = list(cards_collection.find())
-    for card in cards:
-        card["_id"] = str(card["_id"])  # MongoDB ID ko string m convert krna lazmi hy
-    return cards
 
-# 2. Card status update (Approve/Reject) krnay k liye
+@router.get("/all-cards")
+async def get_all_cards(_: dict = Depends(admin_from_token)):
+    try:
+        return await list_mongo_admin_card_rows(500)
+    except PyMongoError as exc:
+        raise HTTPException(status_code=503, detail="Database error") from exc
+
+
 @router.patch("/card-status/{card_id}")
-async def update_card_status(card_id: str, data: dict, token: str = Depends(_bearer)):
-    new_status = data.get("status")
-    result = cards_collection.update_one(
-        {"_id": ObjectId(card_id)},
-        {"$set": {"status": new_status}}
-    )
-    if result.modified_count == 1:
-        return {"success": True, "message": f"Card {new_status} successfully"}
-    raise HTTPException(status_code=404, detail="Card not found")
+async def update_card_status(card_id: str, data: dict = Body(...), _: dict = Depends(admin_from_token)):
+    new_status = str(data.get("status") or "").strip().lower()
+    if new_status not in ("active", "rejected", "pending"):
+        raise HTTPException(status_code=400, detail="status must be active, rejected, or pending")
+    try:
+        oid = ObjectId(card_id)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="Invalid card id") from exc
+    try:
+        ok = await set_mongo_card_status(oid, new_status)
+    except PyMongoError as exc:
+        raise HTTPException(status_code=503, detail="Database error") from exc
+    if not ok:
+        raise HTTPException(status_code=404, detail="Card not found")
+    return {"success": True, "message": f"Card {new_status} successfully"}

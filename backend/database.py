@@ -35,3 +35,7 @@ themes_collection = database.get_collection("visithon_themes")
 
 # Main app users (legacy / shared)
 user_collection = database.get_collection("users")
+
+# Platform manual payment (admin bank + user proof submissions)
+platform_payment_settings_collection = database.get_collection("visithon_platform_payment_settings")
+manual_payment_requests_collection = database.get_collection("visithon_manual_payment_requests")
