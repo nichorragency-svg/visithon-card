@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../config';
-import { ADMIN_TOKEN_KEY } from '../constants';
+import { ADMIN_TOKEN_KEY, getFastApiRoot } from '../constants';
 import AdminPasswordInput from '../components/AdminPasswordInput';
 import AdminLoginSelfRegister from './AdminLoginSelfRegister';
 
@@ -46,14 +46,14 @@ export default function AdminLogin() {
     setErr('');
     setLoading(true);
     try {
-      const base = String(API_BASE_URL || '').trim();
+      const base = getFastApiRoot(API_BASE_URL);
       if (!base) {
         setErr(
           'Admin API URL missing. Vercel → Environment Variables → set REACT_APP_API_BASE_URL or REACT_APP_API_URL = FastAPI root (https://…), NOT visithon-card.vercel.app — then Redeploy. Local: npm start uses http://127.0.0.1:8000.',
         );
         return;
       }
-      const loginUrl = `${base.replace(/\/$/, '')}/admin/login`;
+      const loginUrl = `${base}/admin/login`;
       const { data } = await axios.post(loginUrl, { email, password });
       const token = data?.access_token;
       if (!token) {
@@ -65,7 +65,7 @@ export default function AdminLogin() {
     } catch (ex) {
       const resp = ex.response;
       if (!resp) {
-        const base = String(API_BASE_URL || '').trim() || '(no base URL)';
+        const base = getFastApiRoot(API_BASE_URL) || '(no base URL)';
         setErr(
           `Server tak request nahi pohonchi (${base}). Backend chal raha hai? CORS / HTTPS theek hai? Error: ${ex.message || 'network'}`,
         );
@@ -87,7 +87,7 @@ export default function AdminLogin() {
     }
     setCLoading(true);
     try {
-      const { data } = await axios.post(`${String(API_BASE_URL || '').replace(/\/$/, '')}/admin/register`, {
+      const { data } = await axios.post(`${getFastApiRoot(API_BASE_URL)}/admin/register`, {
         email: cEmail,
         password: cPassword,
         name: cName.trim() || undefined,
@@ -115,7 +115,7 @@ export default function AdminLogin() {
           <p className="mt-1 text-sm text-white/45">Restricted access · admins collection only</p>
           <p className="mt-2 break-all text-[11px] leading-snug text-white/35">
             <span className="text-white/50">API base (env):</span>{' '}
-            {String(API_BASE_URL || '').trim() || (
+            {String(getFastApiRoot(API_BASE_URL) || '').trim() || (
               <span className="text-amber-200/85">empty — address bar wala Vercel URL yahan mat lagao</span>
             )}
           </p>

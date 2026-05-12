@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { FaEye, FaWhatsapp } from 'react-icons/fa';
 import { API_BASE_URL } from '../../config';
-import { ADMIN_TOKEN_KEY } from '../constants';
+import { ADMIN_TOKEN_KEY, getFastApiRoot } from '../constants';
 import { staticUrl } from '../../visithon/utils/staticUrl';
 
 function formatCount(n) {
@@ -108,7 +108,7 @@ export default function CardManagementPage() {
     return token?.trim() ? { Authorization: `Bearer ${token.trim()}` } : {};
   }, []);
 
-  const base = useMemo(() => String(API_BASE_URL || '').replace(/\/$/, ''), []);
+  const base = useMemo(() => getFastApiRoot(API_BASE_URL), []);
 
   const fetchCards = useCallback(async () => {
     setFetchError('');

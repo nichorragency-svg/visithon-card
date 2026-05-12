@@ -2,7 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { FaEdit, FaTrash, FaPlus, FaPaperPlane } from 'react-icons/fa';
 import axios from 'axios';
 import { API_BASE_URL } from '../../config';
-import { ADMIN_TOKEN_KEY } from '../constants';
+import { ADMIN_TOKEN_KEY, getFastApiRoot } from '../constants';
+
+const adminApiRoot = getFastApiRoot(API_BASE_URL);
 
 const seedThemes = [
   {
@@ -167,7 +169,7 @@ export default function TemplatesThemesPage() {
     setLoadingList(true);
     setPageError('');
     try {
-      const { data } = await axios.get(`${API_BASE_URL}/admin/themes`, authHeaders);
+      const { data } = await axios.get(`${adminApiRoot}/admin/themes`, authHeaders);
       const items = Array.isArray(data?.items) ? data.items : [];
       setThemes(
         items.map((t) => ({
@@ -207,7 +209,7 @@ export default function TemplatesThemesPage() {
     try {
       if (editingId) {
         await axios.patch(
-          `${API_BASE_URL}/admin/themes/${editingId}`,
+          `${adminApiRoot}/admin/themes/${editingId}`,
           { ...payload, layout_key: formLayoutKey || undefined },
           authHeaders
         );
@@ -218,7 +220,7 @@ export default function TemplatesThemesPage() {
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/^-+|-+$/g, '') || fallbackKey;
         await axios.post(
-          `${API_BASE_URL}/admin/themes`,
+          `${adminApiRoot}/admin/themes`,
           { ...payload, is_active: true, layout_key: normalized },
           authHeaders
         );
@@ -238,7 +240,7 @@ export default function TemplatesThemesPage() {
     if (!theme) return;
     try {
       await axios.patch(
-        `${API_BASE_URL}/admin/themes/${id}`,
+        `${adminApiRoot}/admin/themes/${id}`,
         { is_active: !theme.isActive },
         authHeaders
       );
@@ -257,7 +259,7 @@ export default function TemplatesThemesPage() {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`${API_BASE_URL}/admin/themes/${id}`, authHeaders);
+      await axios.delete(`${adminApiRoot}/admin/themes/${id}`, authHeaders);
       await loadThemes();
       if (editingId === id) resetForm();
       setStatusMsg('Theme deleted.');
@@ -268,7 +270,7 @@ export default function TemplatesThemesPage() {
 
   const handleSendWizard = async (id) => {
     try {
-      await axios.patch(`${API_BASE_URL}/admin/themes/${id}`, { is_active: true }, authHeaders);
+      await axios.patch(`${adminApiRoot}/admin/themes/${id}`, { is_active: true }, authHeaders);
       await loadThemes();
       setStatusMsg('Theme sent to user wizard (active).');
     } catch (err) {

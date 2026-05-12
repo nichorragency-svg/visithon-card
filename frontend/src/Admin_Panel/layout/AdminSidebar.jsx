@@ -19,7 +19,7 @@ import {
   FaChartLine,
 } from 'react-icons/fa';
 import { API_BASE_URL } from '../../config';
-import { ADMIN_TOKEN_KEY } from '../constants';
+import { ADMIN_TOKEN_KEY, getFastApiRoot } from '../constants';
 
 const navItems = [
   { to: '/admin', end: true, label: 'Dashboard', icon: FaHome },
@@ -70,7 +70,7 @@ export default function AdminSidebar() {
     })();
     if (!token?.trim()) return undefined;
     axios
-      .get(`${API_BASE_URL}/admin/me`, { headers: { Authorization: `Bearer ${token}` } })
+      .get(`${getFastApiRoot(API_BASE_URL)}/admin/me`, { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => {
         if (cancelled) return;
         const email = res.data?.email || '';

@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../config';
-import { ADMIN_TOKEN_KEY } from '../constants';
+import { ADMIN_TOKEN_KEY, getFastApiRoot } from '../constants';
 import AdminPasswordInput from '../components/AdminPasswordInput';
 
 const violetInput =
@@ -25,7 +25,7 @@ export default function AdminCreateCardUserPage() {
     return t?.trim() ? { Authorization: `Bearer ${t.trim()}` } : {};
   }, []);
 
-  const base = useMemo(() => String(API_BASE_URL || '').replace(/\/$/, ''), []);
+  const base = useMemo(() => getFastApiRoot(API_BASE_URL), []);
 
   const onSubmit = async (e) => {
     e.preventDefault();

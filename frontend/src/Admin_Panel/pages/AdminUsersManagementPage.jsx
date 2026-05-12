@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { FaEdit, FaEllipsisV, FaEye } from 'react-icons/fa';
 import { API_BASE_URL } from '../../config';
-import { ADMIN_TOKEN_KEY } from '../constants';
+import { ADMIN_TOKEN_KEY, getFastApiRoot } from '../constants';
 import { avatarSrc, formatJoined, formatPhone, statusBadgeClass } from '../utils/adminUsersFormatters';
 
 export default function AdminUsersManagementPage() {
@@ -18,7 +18,7 @@ export default function AdminUsersManagementPage() {
     return t?.trim() ? { Authorization: `Bearer ${t.trim()}` } : {};
   }, []);
 
-  const base = useMemo(() => String(API_BASE_URL || '').replace(/\/$/, ''), []);
+  const base = useMemo(() => getFastApiRoot(API_BASE_URL), []);
 
   const load = useCallback(async () => {
     setErr('');

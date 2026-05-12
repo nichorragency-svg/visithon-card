@@ -1,15 +1,16 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../../config';
+import { getFastApiRoot } from '../constants';
 import { adminAuthHeaders } from '../utils/adminHeaders';
 
 function assetUrl(relativePath) {
   if (!relativePath) return '';
   const s = String(relativePath).trim();
   if (/^https?:\/\//i.test(s)) return s;
-  const base = String(API_BASE_URL || '').replace(/\/$/, '');
-  if (!base) return '';
-  return `${base}/static/${s.replace(/^\//, '')}`;
+  const root = getFastApiRoot(API_BASE_URL);
+  if (!root) return '';
+  return `${root}/static/${s.replace(/^\//, '')}`;
 }
 
 const empty = {
@@ -30,7 +31,7 @@ export default function AdminPlatformPaymentSettings() {
   const [err, setErr] = useState('');
   const [ok, setOk] = useState('');
 
-  const base = String(API_BASE_URL || '').replace(/\/$/, '');
+  const base = getFastApiRoot(API_BASE_URL);
 
   const load = useCallback(async () => {
     setErr('');
