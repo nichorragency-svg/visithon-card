@@ -12,7 +12,6 @@ const Dot = ({ light }) => (
 export function CardDisplayProfile({
   user,
   isLightTheme,
-  tokenTheme,
   accentInlineStyle,
   avatarRingClass,
   avatarRingStyle,

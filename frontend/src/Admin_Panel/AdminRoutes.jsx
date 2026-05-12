@@ -7,6 +7,9 @@ import AdminShell from './layout/AdminShell';
 import AdminSection from './pages/AdminSection';
 import TemplatesThemesPage from './pages/TemplatesThemesPage';
 import CardManagementPage from './pages/CardManagementPage';
+import AdminUsersManagementPage from './pages/AdminUsersManagementPage';
+import AdminManualPaymentsPage from './pages/AdminManualPaymentsPage';
+import AdminPlatformPaymentSettings from './pages/AdminPlatformPaymentSettings';
 
 
 export default function AdminRoutes() {
@@ -28,12 +31,12 @@ export default function AdminRoutes() {
         }
       >
         <Route index element={<AdminDashboard />} />
-        {/* Card approvals / Mongo card users — same screen as sidebar "Cards" */}
-        <Route path="users" element={<CardManagementPage />} />
+        {/* Card grid UI */}
+        <Route path="users" element={<AdminUsersManagementPage />} />
 
         <Route path="cards" element={<CardManagementPage />} />
 
-        <Route path="payments" element={<AdminSection title="Payments" />} />
+        <Route path="payments" element={<AdminManualPaymentsPage />} />
         <Route path="analytics" element={<AdminSection title="Analytics" />} />
         <Route path="leads" element={<AdminSection title="Leads" />} />
         <Route path="templates" element={<TemplatesThemesPage />} />
@@ -41,7 +44,7 @@ export default function AdminRoutes() {
         <Route path="reminders" element={<AdminSection title="Reminders" />} />
         <Route path="packages" element={<AdminSection title="Packages" />} />
         <Route path="support" element={<AdminSection title="Support Tickets" />} />
-        <Route path="settings" element={<AdminSection title="Settings" />} />
+        <Route path="settings" element={<AdminPlatformPaymentSettings />} />
       </Route>
     </Routes>
   );

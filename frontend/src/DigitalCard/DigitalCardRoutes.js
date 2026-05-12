@@ -23,6 +23,7 @@ import RemindersList from '../visithon/reminders/RemindersList';
 import AddReminder from '../visithon/reminders/AddReminder';
 import CardSettings from '../visithon/settings/CardSettings';
 import SavedCardsList from './pages/SavedCardsList';
+import ManualPaymentSubmit from './pages/ManualPaymentSubmit';
 
 import { SUPABASE_CONFIGURED } from '../config';
 import { supabase } from '../supabase/client';
@@ -121,6 +122,7 @@ const DigitalCardRoutesComp = () => {
 
       <Route path="login" element={<CardLogin />} />
       <Route path="signup" element={<CardSignup />} />
+      <Route path="manual-pay" element={<ManualPaymentSubmit />} />
       <Route path="forgot-password" element={<ForgotPassword />} />
       <Route path="reset-password" element={<CardResetPassword />} />
 
@@ -145,6 +147,7 @@ const DigitalCardRoutesComp = () => {
 
       <Route path="wizard/step-1-feature" element={isCardAuthenticated ? <WizardStep1Feature /> : <Navigate to="/card/login" replace />} />
       <Route path="wizard/step-1-plan" element={isCardAuthenticated ? <WizardStep1Plan /> : <Navigate to="/card/login" replace />} />
+      <Route path="wizard/step-10" element={isCardAuthenticated ? <WizardStep1Plan /> : <Navigate to="/card/login" replace />} />
       <Route path="wizard/step-2" element={isCardAuthenticated ? <WizardStep2 /> : <Navigate to="/card/login" replace />} />
       <Route path="wizard/step-3" element={isCardAuthenticated ? <WizardStep3 /> : <Navigate to="/card/login" replace />} />
       <Route path="wizard/step-4" element={isCardAuthenticated ? <WizardStep4 /> : <Navigate to="/card/login" replace />} />

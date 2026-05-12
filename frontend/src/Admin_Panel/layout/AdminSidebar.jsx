@@ -33,7 +33,7 @@ const navItems = [
   { to: '/admin/reminders', label: 'Reminders', icon: FaBell },
   { to: '/admin/packages', label: 'Packages', icon: FaBox },
   { to: '/admin/support', label: 'Support Tickets', icon: FaHeadset },
-  { to: '/admin/settings', label: 'Settings', icon: FaCog },
+  { to: '/admin/settings', label: 'Payment settings', icon: FaCog },
 ];
 
 function VisithonLogo() {

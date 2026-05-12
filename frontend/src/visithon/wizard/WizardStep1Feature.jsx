@@ -65,8 +65,8 @@ export default function WizardStep1Feature() {
       await patchStep1ShopFlag({
         shop_portfolio_enabled: enabled,
       });
-      if (enabled) navigate('/card/wizard/step-1-plan');
-      else navigate('/card/wizard/step-2');
+      // Pricing plan is step 10 (after payment step 9), not here
+      navigate('/card/wizard/step-2');
     } catch (e) {
       setError(apiErrorMessage(e, 'Could not save.'));
     } finally {
@@ -78,7 +78,7 @@ export default function WizardStep1Feature() {
     {
       key: 'yes',
       title: 'Yes',
-      subtitle: 'Shop / portfolio tools, pricing plan, products & gallery-style setup.',
+      subtitle: 'Shop / portfolio tools, products & gallery-style setup. Pricing plan comes after payment (step 10).',
       Icon: FaShoppingBag,
       tileClass: 'bg-gradient-to-br from-emerald-500/45 via-cyan-500/35 to-fuchsia-500/40 shadow-lg shadow-emerald-500/20',
       iconClass: 'text-white',

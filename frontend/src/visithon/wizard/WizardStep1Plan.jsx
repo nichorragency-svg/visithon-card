@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FaCheck } from 'react-icons/fa';
 import { apiErrorMessage } from '../../apiClient';
 import { getWizardState, patchStep1PricingPlan } from '../../supabase/supabaseWizard';
@@ -47,6 +47,8 @@ const PLANS = [
 
 export default function WizardStep1Plan() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isStep10 = location.pathname.includes('/wizard/step-10');
   const [plan, setPlan] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -83,11 +85,21 @@ export default function WizardStep1Plan() {
   }, [navigate]);
 
   useEffect(() => {
-    // If shop is not enabled, skip this plan selection
     if (!loading && !shopOn) {
-      navigate('/card/wizard/step-1-feature', { replace: true });
+      if (isStep10) {
+        try {
+          const info = JSON.parse(localStorage.getItem('visithon_user_info') || '{}');
+          const id = String(info?.id || '').trim();
+          if (id) navigate(`/card/view/${id}`, { replace: true });
+          else navigate('/card/wizard/step-1-feature', { replace: true });
+        } catch {
+          navigate('/card/wizard/step-1-feature', { replace: true });
+        }
+      } else {
+        navigate('/card/wizard/step-1-feature', { replace: true });
+      }
     }
-  }, [loading, shopOn, navigate]);
+  }, [loading, shopOn, navigate, isStep10]);
 
   const defaultPlan = useMemo(() => PLANS.find((p) => p.id === 'free'), []);
 
@@ -101,7 +113,14 @@ export default function WizardStep1Plan() {
     setSaving(true);
     try {
       await patchStep1PricingPlan({ pricing_plan: pick });
-      navigate('/card/wizard/step-2');
+      if (isStep10) {
+        const info = JSON.parse(localStorage.getItem('visithon_user_info') || '{}');
+        const id = String(info?.id || '').trim();
+        if (id) navigate(`/card/view/${id}`);
+        else navigate('/card/login');
+      } else {
+        navigate('/card/wizard/step-2');
+      }
     } catch (e) {
       setError(apiErrorMessage(e, 'Could not save plan.'));
     } finally {
@@ -113,10 +132,12 @@ export default function WizardStep1Plan() {
     <GlassShell>
       <div className="shrink-0 px-5 pt-4 pb-2">
         <h1 className="bg-gradient-to-r from-fuchsia-200 via-white to-cyan-200 bg-clip-text text-left text-2xl font-bold leading-tight tracking-tight text-transparent drop-shadow-[0_0_24px_rgba(168,85,247,0.25)]">
-          Pricing Plans
+          {isStep10 ? 'Step 10 · Pricing plans' : 'Pricing Plans'}
         </h1>
         <p className="mt-2 text-left text-xs leading-relaxed text-white/45">
-          Choose a plan to activate product / service management on your card. You can change billing later.
+          {isStep10
+            ? 'Shop / portfolio ke liye package yahan choose karein — payment pehle step 9 par save ho chuki hai.'
+            : 'Choose a plan to activate product / service management on your card. You can change billing later.'}
         </p>
       </div>
 

@@ -126,7 +126,15 @@ export default function WizardStep9() {
         data: { session: fresh },
       } = await supabase.auth.getSession();
       await refreshLocalUserInfoForSession(fresh?.access_token, fresh);
-      navigate(`/card/view/${info.id}`);
+
+      const ws = await getWizardState();
+      const shopOn = ws.profile?.step1?.shop_portfolio_enabled === true;
+
+      if (shopOn) {
+        navigate('/card/wizard/step-10');
+      } else {
+        navigate(`/card/view/${info.id}`);
+      }
       
     } catch (e) {
       setError(apiErrorMessage(e, 'Could not save bank details.'));

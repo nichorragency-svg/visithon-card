@@ -6,6 +6,14 @@ import { supabase } from '../../supabase/client';
 import { refreshLocalUserInfoForSession } from '../../supabase/supabaseWizard';
 import './AuthLayout.css';
 
+/** Allow post-login redirect only to in-app /card routes (blocks open redirects). */
+function isSafeInternalCardPath(p) {
+  if (typeof p !== 'string' || p.length === 0) return false;
+  if (!p.startsWith('/card/')) return false;
+  if (p.includes('://') || p.includes('\\')) return false;
+  return true;
+}
+
 const CardLogin = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -69,7 +77,7 @@ const CardLogin = () => {
       }
 
       const returnTo = location.state?.returnTo;
-      if (location.state?.from === 'wallet-save' && typeof returnTo === 'string' && returnTo.startsWith('/card/view/')) {
+      if (isSafeInternalCardPath(returnTo)) {
         navigate(returnTo, { replace: true });
         return;
       }

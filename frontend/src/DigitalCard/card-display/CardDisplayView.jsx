@@ -169,11 +169,11 @@ export default function CardDisplayView() {
   const waDigits = onlyDigits(user.whatsapp);
   const showWa = showContacts && user.whatsapp_visible !== false && waDigits.length > 0;
   const phoneDigits = onlyDigits(user.phone1);
-  const quickActions = buildQuickActions(user, phoneDigits);
   const paymentMethods = Array.isArray(user.payment_methods) ? user.payment_methods : [];
   const hasAccountLink = paymentMethods.some(
     (m) => (m?.iban || '').toString().trim() || (m?.pay_qr_img || '').toString().trim(),
   );
+  const quickActions = buildQuickActions(user, phoneDigits);
 
   const tileRowWaPhone = onlyDigits(user.whatsapp || user.phone1);
   const tileRowShopWebsite = (user.website || '').trim() ? withHttp(user.website) : '';
@@ -197,7 +197,6 @@ export default function CardDisplayView() {
     selectedTheme,
     tokenTheme,
     isLightTheme,
-    quickActionPalette,
     stSvTile,
     stWaTile,
     stShopTile,
@@ -247,9 +246,7 @@ export default function CardDisplayView() {
           <div className="px-5 pb-8 pt-4">
             <CardDisplayProfile
               user={user}
-              mainTextClass={mainTextClass}
               isLightTheme={isLightTheme}
-              tokenTheme={tokenTheme}
               accentInlineStyle={accentInlineStyle}
               avatarRingClass={avatarRingClass}
               avatarRingStyle={avatarRingStyle}
@@ -305,12 +302,7 @@ export default function CardDisplayView() {
             <CardDisplaySocialRow entries={tileRowSocialEntries} />
 
             {showContacts ? (
-              <CardDisplayQuickActions
-                quickActions={quickActions}
-                quickActionPalette={quickActionPalette}
-                tokenTheme={tokenTheme}
-                tileInnerStyle={tileInnerStyle}
-              />
+              <CardDisplayQuickActions quickActions={quickActions} />
             ) : (
               <p className="mt-10 w-full rounded-2xl border border-white/12 bg-white/[0.05] px-4 py-8 text-center text-sm text-white/50 backdrop-blur-xl">
                 Contact details are hidden on this card.
