@@ -20,6 +20,7 @@ export default function AdminCreateCardUserPage() {
   const [ok, setOk] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Auth headers for backend validation
   const authHeaders = useMemo(() => {
     const t = typeof localStorage !== 'undefined' ? localStorage.getItem(ADMIN_TOKEN_KEY) : '';
     return t?.trim() ? { Authorization: `Bearer ${t.trim()}` } : {};
@@ -31,40 +32,53 @@ export default function AdminCreateCardUserPage() {
     e.preventDefault();
     setErr('');
     setOk('');
+
     if (password !== confirm) {
       setErr('Passwords do not match.');
       return;
     }
+
     if (!base) {
-      setErr('API base URL missing (REACT_APP_API_BASE_URL).');
+      setErr('Backend API configuration missing. Please check your settings.');
       return;
     }
+
     setLoading(true);
     try {
-      // Lala, yahan hum ab seedha provision endpoint call kar rahe hain jo backend par MongoDB use karta hai
+      // Direct call to our FastAPI MongoDB provision endpoint
       const { data } = await axios.post(
         `${base}/admin/provision-card-user`,
-        { full_name: fullName.trim(), email: email.trim(), password },
-        { headers: { ...authHeaders, 'Content-Type': 'application/json' } },
+        { 
+          full_name: fullName.trim(), 
+          email: email.trim().toLowerCase(), 
+          password 
+        },
+        { 
+          headers: { 
+            ...authHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
       );
       
       const uid = data?.user_id;
-      setOk(
-        uid
-          ? `Success! User created in MongoDB. ID: ${uid}`
-          : 'User created successfully.',
-      );
-      // Form saaf kar den
+      setOk(uid ? `Success! Account linked to MongoDB (ID: ${uid})` : 'User created successfully!');
+      
+      // Reset form
       setFullName('');
       setEmail('');
       setPassword('');
       setConfirm('');
     } catch (ex) {
-      const d = ex.response?.data?.detail;
-      let msg = typeof d === 'string' ? d : '';
-      if (!msg && Array.isArray(d)) msg = d.map((x) => (typeof x === 'object' && x?.msg) || String(x)).join(' ');
-      if (!msg && d && typeof d === 'object') msg = d.msg || d.message || '';
-      setErr(msg || ex.message || 'Request failed.');
+      // 503 error handling specifically for server issues
+      if (ex.response?.status === 503) {
+        setErr('Server (503): Backend is temporarily unavailable or MongoDB connection failed.');
+      } else {
+        const d = ex.response?.data?.detail;
+        let msg = typeof d === 'string' ? d : '';
+        if (!msg && Array.isArray(d)) msg = d.map((x) => x?.msg || String(x)).join(', ');
+        setErr(msg || ex.message || 'An unexpected error occurred.');
+      }
     } finally {
       setLoading(false);
     }
@@ -73,65 +87,69 @@ export default function AdminCreateCardUserPage() {
   return (
     <div className="min-h-full bg-[#0a0c10] px-5 py-6 text-white">
       <header className="mb-6">
-        <h1 className="text-lg font-bold uppercase tracking-[0.2em] text-white">Create card user</h1>
+        <h1 className="text-lg font-bold uppercase tracking-[0.2em] text-white">Admin Dashboard</h1>
         <p className="mt-1 text-sm text-white/45">
-          Account will be created directly in <span className="text-emerald-400 font-medium">MongoDB</span>.
+          System Mode: <span className="text-emerald-400 font-medium">MongoDB Direct Access</span>
         </p>
       </header>
 
-      <div className="mx-auto max-w-md rounded-2xl border border-white/[0.08] bg-[#0e1118] p-6">
-        {err ? <div className="mb-4 rounded-lg bg-rose-500/10 p-3 text-sm text-rose-400 border border-rose-500/20">{err}</div> : null}
-        {ok ? <div className="mb-4 rounded-lg bg-emerald-500/10 p-3 text-sm text-emerald-400/95 border border-emerald-500/20">{ok}</div> : null}
+      <div className="mx-auto max-w-md rounded-2xl border border-white/[0.08] bg-[#0e1118] p-6 shadow-2xl">
+        <h2 className="mb-6 text-xl font-semibold">Create New Card User</h2>
+        
+        {err && (
+          <div className="mb-4 rounded-lg bg-rose-500/10 p-3 text-sm text-rose-400 border border-rose-500/20 animate-pulse">
+            <strong>Error:</strong> {err}
+          </div>
+        )}
+        
+        {ok && (
+          <div className="mb-4 rounded-lg bg-emerald-500/10 p-3 text-sm text-emerald-400 border border-emerald-500/20">
+            {ok}
+          </div>
+        )}
 
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
-            <label htmlFor="cc-name" className="block text-xs font-medium uppercase tracking-wider text-white/40">
-              Full name
-            </label>
+            <label className="block text-xs font-medium uppercase tracking-wider text-white/40 mb-1">Full Name</label>
             <input
-              id="cc-name"
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               required
-              className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-white outline-none focus:border-violet-500/50"
-              autoComplete="name"
+              placeholder="John Doe"
+              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-white outline-none focus:border-violet-500/50"
             />
           </div>
+
           <div>
-            <label htmlFor="cc-email" className="block text-xs font-medium uppercase tracking-wider text-white/40">
-              Gmail / email
-            </label>
+            <label className="block text-xs font-medium uppercase tracking-wider text-white/40 mb-1">Gmail / Email</label>
             <input
-              id="cc-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="mt-1 w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-white outline-none focus:border-violet-500/50"
-              autoComplete="off"
+              placeholder="user@gmail.com"
+              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 text-white outline-none focus:border-violet-500/50"
             />
           </div>
+
           <AdminPasswordInput
-            id="cc-pw"
             label="Password"
             value={password}
             onChange={setPassword}
-            autoComplete="new-password"
             show={showPw}
-            onToggle={() => setShowPw((v) => !v)}
+            onToggle={() => setShowPw(!showPw)}
             required
             minLength={8}
             inputClassName={violetInput}
           />
+
           <AdminPasswordInput
-            id="cc-pw2"
-            label="Confirm password"
+            label="Confirm Password"
             value={confirm}
             onChange={setConfirm}
-            autoComplete="new-password"
             show={showCf}
-            onToggle={() => setShowCf((v) => !v)}
+            onToggle={() => setShowCf(!showCf)}
             required
             minLength={8}
             inputClassName={violetInput}
@@ -140,26 +158,18 @@ export default function AdminCreateCardUserPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-900/40 transition hover:opacity-95 disabled:opacity-50"
+            className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 py-3 text-sm font-semibold text-white shadow-lg transition hover:brightness-110 disabled:opacity-50"
           >
-            {loading ? 'Processing...' : 'Create user & card access'}
+            {loading ? 'Processing...' : 'Provision User Access'}
           </button>
         </form>
 
-        <div className="mt-6 flex flex-wrap gap-3 border-t border-white/10 pt-6 text-sm">
-          <button
-            type="button"
-            className="text-violet-300/90 underline-offset-2 hover:underline"
-            onClick={() => navigate('/card/login')}
-          >
-            Open card login
+        <div className="mt-6 flex justify-between border-t border-white/10 pt-6 text-sm">
+          <button type="button" className="text-violet-300 hover:underline" onClick={() => navigate('/card/login')}>
+            Card Login
           </button>
-          <button
-            type="button"
-            className="text-white/50 hover:text-white/80"
-            onClick={() => navigate('/admin/users')}
-          >
-            ← Users list
+          <button type="button" className="text-white/40 hover:text-white" onClick={() => navigate('/admin/users')}>
+            ← Back to Users
           </button>
         </div>
       </div>
