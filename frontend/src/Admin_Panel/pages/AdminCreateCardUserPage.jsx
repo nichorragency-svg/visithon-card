@@ -41,17 +41,22 @@ export default function AdminCreateCardUserPage() {
     }
     setLoading(true);
     try {
+      // Lala, yahan hum ab seedha provision endpoint call kar rahe hain jo backend par MongoDB use karta hai
       const { data } = await axios.post(
         `${base}/admin/provision-card-user`,
         { full_name: fullName.trim(), email: email.trim(), password },
         { headers: { ...authHeaders, 'Content-Type': 'application/json' } },
       );
+      
       const uid = data?.user_id;
       setOk(
         uid
-          ? `User ready — ID: ${uid}. They can log in at Card login and complete the wizard.`
-          : 'User created. Open Card login with this email and password.',
+          ? `Success! User created in MongoDB. ID: ${uid}`
+          : 'User created successfully.',
       );
+      // Form saaf kar den
+      setFullName('');
+      setEmail('');
       setPassword('');
       setConfirm('');
     } catch (ex) {
@@ -70,13 +75,13 @@ export default function AdminCreateCardUserPage() {
       <header className="mb-6">
         <h1 className="text-lg font-bold uppercase tracking-[0.2em] text-white">Create card user</h1>
         <p className="mt-1 text-sm text-white/45">
-          Confirmed account (no email wait). Server needs <code className="text-violet-300/90">SUPABASE_SERVICE_ROLE_KEY</code>.
+          Account will be created directly in <span className="text-emerald-400 font-medium">MongoDB</span>.
         </p>
       </header>
 
       <div className="mx-auto max-w-md rounded-2xl border border-white/[0.08] bg-[#0e1118] p-6">
-        {err ? <p className="mb-4 text-sm text-rose-400">{err}</p> : null}
-        {ok ? <p className="mb-4 text-sm text-emerald-400/95">{ok}</p> : null}
+        {err ? <div className="mb-4 rounded-lg bg-rose-500/10 p-3 text-sm text-rose-400 border border-rose-500/20">{err}</div> : null}
+        {ok ? <div className="mb-4 rounded-lg bg-emerald-500/10 p-3 text-sm text-emerald-400/95 border border-emerald-500/20">{ok}</div> : null}
 
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
@@ -137,7 +142,7 @@ export default function AdminCreateCardUserPage() {
             disabled={loading}
             className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-900/40 transition hover:opacity-95 disabled:opacity-50"
           >
-            {loading ? 'Creating…' : 'Create user & card access'}
+            {loading ? 'Processing...' : 'Create user & card access'}
           </button>
         </form>
 
