@@ -10,12 +10,12 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from jose import jwt
 from pymongo.errors import PyMongoError
 
-from digital_card.security import hash_password
+from digital_card.card_auth import hash_password
 from database import admins_collection, themes_collection
 from admin_panel.mongo_cards_source import list_mongo_admin_card_rows, set_mongo_card_status
 from admin_panel.auth_deps import ADMIN_SECRET, ADMIN_ALGORITHM, admin_from_token
 from admin_panel.mongo_users_source import list_mongo_app_user_rows
-from digital_card.mongo_users_service import create_visithon_user_with_card
+from digital_card.mongo_users_service import create_visithon_user_with_card, email_taken_anywhere
 
 router = APIRouter()
 
