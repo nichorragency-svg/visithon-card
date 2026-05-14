@@ -10,11 +10,12 @@ from fastapi import APIRouter, Body, Depends, HTTPException
 from jose import jwt
 from pymongo.errors import PyMongoError
 
-from digital_card.card_auth import hash_password
+from digital_card.security import hash_password
 from database import admins_collection, themes_collection
 from admin_panel.mongo_cards_source import list_mongo_admin_card_rows, set_mongo_card_status
 from admin_panel.auth_deps import ADMIN_SECRET, ADMIN_ALGORITHM, admin_from_token
-from admin_panel.supabase_provision import supabase_admin_create_confirmed_user
+from admin_panel.mongo_users_source import list_mongo_app_user_rows
+from digital_card.mongo_users_service import create_visithon_user_with_card
 
 router = APIRouter()
 
@@ -222,13 +223,8 @@ async def delete_theme(theme_id: str, _: dict = Depends(admin_from_token)):
     return {"ok": True, "deleted_id": theme_id}
 
 
-@router.post("/provision-card-user")
-async def provision_card_user(data: dict = Body(...), _: dict = Depends(admin_from_token)):
-    """
-    Create a card-holder Auth user with email already confirmed (no inbox step).
-    Requires SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY on the API server.
-    User can then log in at /card/login and complete the wizard.
-    """
+async def _provision_card_user_impl(data: dict) -> dict:
+    """Create Mongo `users` row + linked `visithon_cards` doc (JWT login uses card _id)."""
     email = str(data.get("email") or "").lower().strip()
     password = str(data.get("password") or "")
     full_name = str(data.get("full_name") or data.get("name") or "").strip()
@@ -236,9 +232,41 @@ async def provision_card_user(data: dict = Body(...), _: dict = Depends(admin_fr
         raise HTTPException(status_code=400, detail="email and password are required")
     if len(password) < 8:
         raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
-    user = await supabase_admin_create_confirmed_user(email=email, password=password, full_name=full_name or email.split("@")[0])
-    uid = user.get("id") or user.get("user", {}).get("id")
-    return {"ok": True, "user_id": uid, "email": email}
+    if await email_taken_anywhere(email):
+        raise HTTPException(status_code=400, detail="Email is already registered.")
+    try:
+        user_id, card_id = await create_visithon_user_with_card(
+            full_name=full_name or email.split("@")[0],
+            email=email,
+            password=password,
+        )
+    except HTTPException:
+        raise
+    except PyMongoError as exc:
+        raise HTTPException(status_code=503, detail="Database error") from exc
+    return {"ok": True, "user_id": user_id, "card_id": card_id, "email": email}
+
+
+@router.get("/app-users")
+async def list_app_users(_: dict = Depends(admin_from_token)):
+    return await list_mongo_app_user_rows(500)
+
+
+@router.post("/app-users")
+async def create_app_user(data: dict = Body(...), _: dict = Depends(admin_from_token)):
+    """Same body as POST /admin/provision-card-user — creates Mongo user + linked card."""
+    return await _provision_card_user_impl(data)
+
+
+@router.post("/provision-card-user")
+async def provision_card_user(data: dict = Body(...), _: dict = Depends(admin_from_token)):
+    return await _provision_card_user_impl(data)
+
+
+# Alias for older clients / typos; same handler as POST /admin/provision-card-user
+@router.post("/create-card-user")
+async def create_card_user_alias(data: dict = Body(...), _: dict = Depends(admin_from_token)):
+    return await _provision_card_user_impl(data)
 
 
 @router.get("/all-cards")

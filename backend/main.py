@@ -24,6 +24,26 @@ from digital_card import (
 app = FastAPI(title="Visithon Card API")
 
 
+# Browser origin for this VPS (React on :80 / Nginx → API on :8000). Always merged into allow_origins.
+_VPS_BROWSER_ORIGIN = "http://159.65.138.9"
+_LOCAL_DEV_ORIGINS = (
+    "http://127.0.0.1:3000",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://localhost:5173",
+)
+
+
+def _dedupe_origins(seq: list[str]) -> list[str]:
+    seen: set[str] = set()
+    out: list[str] = []
+    for o in seq:
+        if o and o not in seen:
+            seen.add(o)
+            out.append(o)
+    return out
+
+
 def _cors_settings() -> tuple[list[str], bool, str | None]:
     """
     Browser fetches (admin API, vCard photo fetch from /static/) need ACAO when the page
@@ -33,20 +53,28 @@ def _cors_settings() -> tuple[list[str], bool, str | None]:
 
     - CORS_ALLOWED_ORIGINS: comma- or newline-separated exact origins (no trailing slash).
     - CORS_ALLOW_ORIGIN_REGEX: optional; origins matching this regex are also allowed.
-      Example for one host: ^https?://159\\.65\\.138\\.9(:\\d+)?$
+    - _VPS_BROWSER_ORIGIN is always included when using explicit origins (covers common VPS .env gaps).
+
+    If both CORS_ALLOWED_ORIGINS and CORS_ALLOW_ORIGIN_REGEX are unset, defaults include the VPS
+    origin and local dev ports (no wildcard), with credentials allowed.
     """
     raw = os.getenv("CORS_ALLOWED_ORIGINS", "").strip()
     regex = os.getenv("CORS_ALLOW_ORIGIN_REGEX", "").strip() or None
     creds = os.getenv("CORS_ALLOW_CREDENTIALS", "true").strip().lower() in ("1", "true", "yes")
 
     if not raw and not regex:
-        return (["*"], False, None)
+        origins = _dedupe_origins([*_LOCAL_DEV_ORIGINS, _VPS_BROWSER_ORIGIN])
+        return (origins, creds, None)
 
     origins = [o.strip() for o in raw.replace("\n", ",").split(",") if o.strip()]
     if not origins and regex:
-        return ([], creds, regex)
+        origins = _dedupe_origins([*_LOCAL_DEV_ORIGINS, _VPS_BROWSER_ORIGIN])
+        return (origins, creds, regex)
     if not origins:
-        return (["*"], False, None)
+        origins = _dedupe_origins([*_LOCAL_DEV_ORIGINS, _VPS_BROWSER_ORIGIN])
+        return (origins, creds, regex)
+
+    origins = _dedupe_origins([*origins, _VPS_BROWSER_ORIGIN, *_LOCAL_DEV_ORIGINS])
     return (origins, creds, regex)
 
 
