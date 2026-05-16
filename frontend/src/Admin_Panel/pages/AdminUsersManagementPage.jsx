@@ -4,6 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { FaEdit, FaEllipsisV, FaEye } from 'react-icons/fa';
 import { API_BASE_URL } from '../../config';
 import { ADMIN_TOKEN_KEY, getFastApiRoot } from '../constants';
+import {
+  applyCardUserSessionPayload,
+  navigateToCardWizardEdit,
+  restoreAdminToken,
+  rowCardAndUserIds,
+  snapshotAdminToken,
+} from '../utils/adminCardSession';
 import { avatarSrc, formatJoined, formatPhone, statusBadgeClass } from '../utils/adminUsersFormatters';
 
 export default function AdminUsersManagementPage() {
@@ -12,6 +19,7 @@ export default function AdminUsersManagementPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState('');
   const [menuId, setMenuId] = useState(null);
+  const [editingCardId, setEditingCardId] = useState(null);
 
   const authHeaders = useMemo(() => {
     const t = typeof localStorage !== 'undefined' ? localStorage.getItem(ADMIN_TOKEN_KEY) : '';
@@ -77,6 +85,53 @@ export default function AdminUsersManagementPage() {
     const url = `${window.location.origin}/card/view/${encodeURIComponent(id)}`;
     void navigator.clipboard?.writeText(url).then(() => window.alert('Link copied.'));
     setMenuId(null);
+  };
+
+  const openCardWizardEditor = async (row) => {
+    const { cardId, userId } = rowCardAndUserIds(row);
+    const fullName = String(row.user?.name || row.headline || '').trim();
+    const email = String(row.email || '').trim();
+
+    if (!cardId) {
+      window.alert('This user has no linked card document yet.');
+      return;
+    }
+    if (!base) {
+      window.alert('Backend API is not configured.');
+      return;
+    }
+
+    const adminToken = snapshotAdminToken();
+    setEditingCardId(cardId);
+    setMenuId(null);
+
+    try {
+      const { data } = await axios.post(
+        `${base}/admin/card-session/${encodeURIComponent(cardId)}`,
+        {},
+        { headers: { ...authHeaders, 'Content-Type': 'application/json' } },
+      );
+
+      if (!applyCardUserSessionPayload(data, { fullName, email })) {
+        throw new Error('Server did not return a card session token.');
+      }
+
+      restoreAdminToken(adminToken);
+      navigateToCardWizardEdit(navigate, {
+        cardId,
+        userId: userId || data.user_id,
+        fullName,
+        email,
+        from: 'admin-users',
+      });
+    } catch (e) {
+      restoreAdminToken(adminToken);
+      const detail = e?.response?.data?.detail;
+      const msg = typeof detail === 'string' ? detail : e?.message || 'Could not open card wizard.';
+      window.alert(msg);
+    } finally {
+      setEditingCardId(null);
+    }
   };
 
   return (
@@ -165,13 +220,10 @@ export default function AdminUsersManagementPage() {
                           </button>
                           <button
                             type="button"
-                            aria-label="Account login"
-                            className="rounded-lg p-2 hover:bg-white/10 hover:text-white"
-                            onClick={() =>
-                              navigate('/card/login', {
-                                state: { returnTo: `/card/view/${encodeURIComponent(row._id)}` },
-                              })
-                            }
+                            aria-label="Edit card wizard"
+                            className="rounded-lg p-2 hover:bg-white/10 hover:text-white disabled:opacity-40"
+                            disabled={editingCardId === row._id}
+                            onClick={() => void openCardWizardEditor(row)}
                           >
                             <FaEdit />
                           </button>

@@ -1,49 +1,37 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FaLock, FaArrowLeft } from 'react-icons/fa';
+import React, { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { FaLock, FaEnvelope, FaKey, FaArrowLeft } from 'react-icons/fa';
 import { apiErrorMessage } from '../../apiClient';
-import { supabase } from '../../supabase/client';
+import { resetPasswordWithOtp } from '../../api/visithonApi';
 import './AuthLayout.css';
 
-/** Opened via Supabase email recovery redirect. */
 export default function CardResetPassword() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [email, setEmail] = useState(location.state?.email || '');
+  const [otp, setOtp] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    if (!supabase) return undefined;
-
-    (async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) setReady(true);
-    })();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((evt, sess) => {
-      if ((evt === 'PASSWORD_RECOVERY' || evt === 'SIGNED_IN') && sess) {
-        setReady(true);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
 
   const onSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (!email.trim()) {
+      setError('Email is required.');
+      return;
+    }
+    if (!otp.trim()) {
+      setError('Enter the 6-digit code from your email.');
+      return;
+    }
     if (!password || password.length < 6) {
       setError('Password should be at least 6 characters.');
       return;
     }
     setLoading(true);
     try {
-      if (!supabase) throw new Error('Supabase missing.');
-      const { error: updErr } = await supabase.auth.updateUser({ password });
-      if (updErr) throw updErr;
+      await resetPasswordWithOtp(email.trim(), otp.trim(), password);
       navigate('/card/login', { replace: true });
     } catch (err) {
       setError(apiErrorMessage(err, 'Could not update password.'));
@@ -60,18 +48,34 @@ export default function CardResetPassword() {
         </div>
         <div className="auth-header">
           <h2>Set new password</h2>
-          <p>Use the link sent to your email to reach this screen.</p>
+          <p>Enter the code we sent to your email.</p>
         </div>
-
-        {!ready && (
-          <p className="text-center text-xs text-white/55">
-            Waiting for recovery session… If stuck, request a fresh link from Forgot Password.
-          </p>
-        )}
 
         {error && <div className="auth-error-msg">{error}</div>}
 
         <form onSubmit={onSubmit} className="auth-form">
+          <div className="auth-input-group">
+            <FaEnvelope className="input-icon" />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              required
+            />
+          </div>
+          <div className="auth-input-group">
+            <FaKey className="input-icon" />
+            <input
+              type="text"
+              inputMode="numeric"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+              placeholder="6-digit code"
+              required
+              maxLength={6}
+            />
+          </div>
           <div className="auth-input-group">
             <FaLock className="input-icon" />
             <input
@@ -83,7 +87,7 @@ export default function CardResetPassword() {
               minLength={6}
             />
           </div>
-          <button type="submit" className="auth-btn" disabled={loading || !ready}>
+          <button type="submit" className="auth-btn" disabled={loading}>
             {loading ? 'Saving…' : 'Save password'}
           </button>
         </form>

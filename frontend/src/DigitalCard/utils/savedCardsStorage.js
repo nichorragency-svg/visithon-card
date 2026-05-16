@@ -1,3 +1,5 @@
+import { parseCardIdFromScanText } from './cardPublicUrl';
+
 /** Per-device saved card list (localStorage). Wallet UI only when the user is logged in. */
 const STORAGE_KEY = 'visithon_saved_cards_v1';
 const MAX_CARDS = 60;
@@ -49,15 +51,7 @@ export function removeSavedCard(userId) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
 }
 
-/** Try to parse `/card/view/:uuid` from a scanned URL or path. */
+/** Try to parse `/card/view/:cardId` from a scanned URL or path (legacy name). */
 export function parseViewUserIdFromUrl(href) {
-  if (!href || typeof href !== 'string') return '';
-  try {
-    const u = href.startsWith('http') ? new URL(href) : new URL(href, window.location.origin);
-    const m = u.pathname.match(/\/card\/view\/([^/?#]+)/);
-    return m ? decodeURIComponent(m[1]).trim() : '';
-  } catch {
-    const m = String(href).match(/\/card\/view\/([^/?#]+)/);
-    return m ? decodeURIComponent(m[1]).trim() : '';
-  }
+  return parseCardIdFromScanText(href);
 }

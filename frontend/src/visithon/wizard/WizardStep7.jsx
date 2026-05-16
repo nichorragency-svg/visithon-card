@@ -5,7 +5,7 @@ import {
   getWizardState,
   normalizeStep7Schedule,
   patchStep7,
-} from '../../supabase/supabaseWizard';
+} from '../../api/visithonApi';
 import CustomButton from '../components/CustomButton';
 import GlassShell from '../components/GlassShell';
 import GlassToggle from '../components/GlassToggle';

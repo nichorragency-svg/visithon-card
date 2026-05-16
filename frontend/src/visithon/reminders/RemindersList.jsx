@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaPlus, FaTrash } from 'react-icons/fa';
 import { apiErrorMessage } from '../../apiClient';
-import { deleteReminderById, listRemindersPayload } from '../../supabase/supabaseWizard';
+import { deleteReminderById, listRemindersPayload } from '../../api/visithonApi';
 import CustomButton from '../components/CustomButton';
 import GlassShell from '../components/GlassShell';
 

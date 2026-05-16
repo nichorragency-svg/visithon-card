@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { apiErrorMessage } from '../../apiClient';
-import { supabase } from '../../supabase/client';
+import { requestPasswordReset } from '../../api/visithonApi';
 import { FaEnvelope, FaArrowLeft } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import './AuthLayout.css';
@@ -15,18 +15,13 @@ const ForgotPassword = () => {
   const handleRequest = async (e) => {
     e.preventDefault();
     setError('');
-    if (!supabase) {
-      setError('Missing Supabase configuration.');
-      return;
-    }
     setLoading(true);
     try {
-      const redirectTo = `${window.location.origin}/card/reset-password`;
-      const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
-      if (err) throw err;
+      await requestPasswordReset(email.trim());
       setSent(true);
+      navigate('/card/reset-password', { state: { email: email.trim() } });
     } catch (err) {
-      setError(apiErrorMessage(err, 'Could not send reset email.'));
+      setError(apiErrorMessage(err, 'Could not send reset code.'));
     } finally {
       setLoading(false);
     }
@@ -41,13 +36,13 @@ const ForgotPassword = () => {
 
         <div className="auth-header">
           <h2>Forgot Password</h2>
-          <p>We&apos;ll send a secure link if this email exists in our system.</p>
+          <p>We&apos;ll send a 6-digit code if this email exists in our system.</p>
         </div>
 
         {error && <div className="auth-error-msg">{error}</div>}
         {sent && (
           <div className="auth-error-msg" style={{ borderColor: '#22c55e80', background: '#14532d40' }}>
-            Check your inbox and open the link to set a new password.
+            Enter the code on the next screen to set a new password.
           </div>
         )}
 
@@ -63,7 +58,7 @@ const ForgotPassword = () => {
             />
           </div>
           <button type="submit" className="auth-btn" disabled={loading}>
-            {loading ? 'Sending…' : 'Send reset link'}
+            {loading ? 'Sending…' : 'Send reset code'}
           </button>
         </form>
 

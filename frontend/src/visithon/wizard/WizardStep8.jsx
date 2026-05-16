@@ -7,7 +7,7 @@ import {
   normalizeStep8Images,
   patchStep8,
   uploadGalleryFile,
-} from '../../supabase/supabaseWizard';
+} from '../../api/visithonApi';
 import CustomButton from '../components/CustomButton';
 import GlassShell from '../components/GlassShell';
 import { staticUrl } from '../utils/staticUrl';

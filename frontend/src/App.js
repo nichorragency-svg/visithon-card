@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import DigitalCardRoutes from './DigitalCard/DigitalCardRoutes';
 import AdminShortcutListener from './Admin_Panel/AdminShortcutListener';
+import PwaInstallPrompt from './components/PwaInstallPrompt';
 
 const AdminRoutes = lazy(() => import('./Admin_Panel/AdminRoutes'));
 
@@ -9,6 +10,7 @@ function App() {
   return (
     <Router>
       <AdminShortcutListener />
+      <PwaInstallPrompt />
       <div className="min-h-screen w-full overflow-x-hidden bg-slate-950">
         <Routes>
           <Route path="/card/*" element={<DigitalCardRoutes />} />

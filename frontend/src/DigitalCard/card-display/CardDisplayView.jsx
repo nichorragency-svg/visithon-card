@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { SUPABASE_CONFIGURED } from '../../config';
-import { supabase } from '../../supabase/client';
 import { CardDisplayActionTiles } from './CardDisplayActionTiles';
 import { CardDisplayFooter } from './CardDisplayFooter';
 import { CardDisplayHeader } from './CardDisplayHeader';
@@ -34,7 +32,6 @@ export default function CardDisplayView() {
   const navigate = useNavigate();
   const { user, loading, fetchError, fetchCard } = useCardDisplayData(userId);
   const [menuOpen, setMenuOpen] = useState(false);
-  /** Supabase session + localStorage shadow; avoids menu thinking user is logged out when token not synced yet. */
   const [hasSessionOrToken, setHasSessionOrToken] = useState(() =>
     typeof localStorage !== 'undefined' ? !!localStorage.getItem('visithon_card_token') : false,
   );
@@ -55,26 +52,9 @@ export default function CardDisplayView() {
   }, [hasSessionOrToken, menuOpen]);
 
   useEffect(() => {
-    const fromLs = () =>
-      typeof localStorage !== 'undefined' && !!localStorage.getItem('visithon_card_token');
-    const apply = async () => {
-      if (!SUPABASE_CONFIGURED || !supabase) {
-        setHasSessionOrToken(fromLs());
-        return;
-      }
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      setHasSessionOrToken(!!session?.access_token || fromLs());
-    };
-    apply();
-    if (!SUPABASE_CONFIGURED || !supabase) return undefined;
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
-      apply();
-    });
-    return () => subscription?.unsubscribe?.();
+    setHasSessionOrToken(
+      typeof localStorage !== 'undefined' && !!localStorage.getItem('visithon_card_token'),
+    );
   }, []);
 
   useEffect(() => {

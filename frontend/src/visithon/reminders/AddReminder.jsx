@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
 import { apiErrorMessage } from '../../apiClient';
-import { createReminder } from '../../supabase/supabaseWizard';
+import { createReminder } from '../../api/visithonApi';
 import CustomButton from '../components/CustomButton';
 import CustomInput from '../components/CustomInput';
 import GlassShell from '../components/GlassShell';

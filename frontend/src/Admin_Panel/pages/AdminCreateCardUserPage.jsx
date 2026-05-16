@@ -4,6 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../config';
 import { ADMIN_TOKEN_KEY, getFastApiRoot } from '../constants';
 import AdminPasswordInput from '../components/AdminPasswordInput';
+import {
+  applyCardUserSessionPayload,
+  navigateToCardWizardEdit,
+  restoreAdminToken,
+  snapshotAdminToken,
+} from '../utils/adminCardSession';
 
 const violetInput =
   'w-full rounded-lg border border-white/10 bg-black/40 py-2.5 pl-3 pr-11 text-white outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/30';
@@ -20,7 +26,6 @@ export default function AdminCreateCardUserPage() {
   const [ok, setOk] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Auth headers for backend validation
   const authHeaders = useMemo(() => {
     const t = typeof localStorage !== 'undefined' ? localStorage.getItem(ADMIN_TOKEN_KEY) : '';
     return t?.trim() ? { Authorization: `Bearer ${t.trim()}` } : {};
@@ -43,39 +48,76 @@ export default function AdminCreateCardUserPage() {
       return;
     }
 
+    const adminToken = snapshotAdminToken();
+    const emailVal = email.trim().toLowerCase();
+    const nameVal = fullName.trim();
+
     setLoading(true);
     try {
-      // Direct call to our FastAPI MongoDB provision endpoint
       const { data } = await axios.post(
         `${base}/admin/provision-card-user`,
-        { 
-          full_name: fullName.trim(), 
-          email: email.trim().toLowerCase(), 
-          password 
-        },
-        { 
-          headers: { 
-            ...authHeaders, 
-            'Content-Type': 'application/json' 
-          } 
-        }
+        { full_name: nameVal, email: emailVal, password },
+        { headers: { ...authHeaders, 'Content-Type': 'application/json' } },
       );
-      
-      const uid = data?.user_id;
-      setOk(uid ? `Success! Account linked to MongoDB (ID: ${uid})` : 'User created successfully!');
-      
-      // Reset form
+
+      if (data?.ok) {
+        let sessionReady = applyCardUserSessionPayload(data, {
+          fullName: nameVal,
+          email: emailVal,
+        });
+
+        if (!sessionReady) {
+          const { data: loginData } = await axios.post(
+            `${base}/card-auth/login`,
+            { email: emailVal, password },
+            { headers: { 'Content-Type': 'application/json' } },
+          );
+          sessionReady = applyCardUserSessionPayload(
+            {
+              token: loginData?.token,
+              card_id: loginData?.user?.id,
+              user_id: loginData?.user?.user_id,
+              user: loginData?.user,
+            },
+            { fullName: nameVal, email: emailVal },
+          );
+        }
+
+        restoreAdminToken(adminToken);
+
+        if (sessionReady) {
+          navigateToCardWizardEdit(navigate, {
+            cardId: data.card_id,
+            userId: data.user_id,
+            fullName: nameVal,
+            email: emailVal,
+            from: 'admin-provision',
+          });
+          return;
+        }
+      }
+
+      restoreAdminToken(adminToken);
+      setOk(
+        data?.user_id
+          ? `User created (ID: ${data.user_id}). Sign in on the card app to finish setup.`
+          : 'User created successfully.',
+      );
       setFullName('');
       setEmail('');
       setPassword('');
       setConfirm('');
     } catch (ex) {
-      // 503 error handling specifically for server issues
+      restoreAdminToken(adminToken);
+      const d = ex.response?.data?.detail;
+      const detailStr = typeof d === 'string' ? d : '';
       if (ex.response?.status === 503) {
-        setErr('Server (503): Backend is temporarily unavailable or MongoDB connection failed.');
+        setErr(
+          detailStr ||
+            'Server (503): MongoDB unreachable or write failed. Check MONGO_URI on the API server and Atlas IP allowlist.',
+        );
       } else {
-        const d = ex.response?.data?.detail;
-        let msg = typeof d === 'string' ? d : '';
+        let msg = detailStr;
         if (!msg && Array.isArray(d)) msg = d.map((x) => x?.msg || String(x)).join(', ');
         setErr(msg || ex.message || 'An unexpected error occurred.');
       }
@@ -95,13 +137,13 @@ export default function AdminCreateCardUserPage() {
 
       <div className="mx-auto max-w-md rounded-2xl border border-white/[0.08] bg-[#0e1118] p-6 shadow-2xl">
         <h2 className="mb-6 text-xl font-semibold">Create New Card User</h2>
-        
+
         {err && (
           <div className="mb-4 rounded-lg bg-rose-500/10 p-3 text-sm text-rose-400 border border-rose-500/20 animate-pulse">
             <strong>Error:</strong> {err}
           </div>
         )}
-        
+
         {ok && (
           <div className="mb-4 rounded-lg bg-emerald-500/10 p-3 text-sm text-emerald-400 border border-emerald-500/20">
             {ok}

@@ -25,10 +25,6 @@ import CardSettings from '../visithon/settings/CardSettings';
 import SavedCardsList from './pages/SavedCardsList';
 import ManualPaymentSubmit from './pages/ManualPaymentSubmit';
 
-import { SUPABASE_CONFIGURED } from '../config';
-import { supabase } from '../supabase/client';
-import { refreshLocalUserInfoForSession } from '../supabase/supabaseWizard';
-
 /** Lets existing card holders open wizard again when coming from Edit (avoid redirect back to `/card/view`). */
 function WizardStep1Entry({ isCardAuthenticated, hasCard, profileUserId }) {
   const location = useLocation();
@@ -39,59 +35,24 @@ function WizardStep1Entry({ isCardAuthenticated, hasCard, profileUserId }) {
   return <WizardStep1 />;
 }
 
-function MissingSupabase() {
-  return (
-    <div className="flex min-h-[50vh] flex-col items-center justify-center px-6 text-center text-white/85">
-      <p className="max-w-md text-sm leading-relaxed">
-        Missing <code className="rounded bg-white/10 px-1">REACT_APP_SUPABASE_URL</code> or{' '}
-        <code className="rounded bg-white/10 px-1">REACT_APP_SUPABASE_ANON_KEY</code>. Add both in Vercel
-        Environment Variables, then redeploy.
-      </p>
-    </div>
-  );
-}
-
 const DigitalCardRoutesComp = () => {
   const [authReady, setAuthReady] = useState(false);
-  const [session, setSession] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    if (!SUPABASE_CONFIGURED || !supabase) {
-      setAuthReady(true);
-      return undefined;
+    // Check authentication using standard JWT Token from MongoDB backend
+    const token = localStorage.getItem('visithon_card_token');
+    if (token) {
+      setIsAuthenticated(true);
+    } else {
+      setIsAuthenticated(false);
     }
-
-    let unsub;
-    (async () => {
-      const { data } = await supabase.auth.getSession();
-      setSession(data.session ?? null);
-      if (data.session) {
-        await refreshLocalUserInfoForSession(data.session.access_token, data.session).catch(() => {});
-      }
-      setAuthReady(true);
-    })();
-
-    const ret = supabase.auth.onAuthStateChange(async (_event, sess) => {
-      setSession(sess ?? null);
-      if (sess) await refreshLocalUserInfoForSession(sess.access_token, sess).catch(() => {});
-      else {
-        localStorage.removeItem('visithon_card_token');
-        localStorage.removeItem('visithon_user_info');
-      }
-    });
-    unsub = ret?.data?.subscription;
-    return () => unsub?.unsubscribe?.();
+    setAuthReady(true);
   }, []);
 
-  if (!SUPABASE_CONFIGURED) {
-    return (
-      <Routes>
-        <Route path="*" element={<MissingSupabase />} />
-      </Routes>
-    );
+  if (!authReady) {
+    return <SplashScreen />;
   }
-
-  const isCardAuthenticated = !!session?.access_token || !!localStorage.getItem('visithon_card_token');
 
   let userInfo = {};
   try {
@@ -108,9 +69,7 @@ const DigitalCardRoutesComp = () => {
       <Route
         index
         element={
-          !authReady ? (
-            <SplashScreen />
-          ) : !isCardAuthenticated ? (
+          !isAuthenticated ? (
             <Navigate to="/card/login" replace />
           ) : userId ? (
             <Navigate to={`/card/view/${userId}`} replace />
@@ -129,37 +88,44 @@ const DigitalCardRoutesComp = () => {
       <Route path="view/:userId" element={<CardDisplay />} />
       <Route path="scan" element={<QRScanner />} />
       <Route path="link-device/:userId" element={<LinkDevice />} />
+      
       <Route
         path="saved"
-        element={isCardAuthenticated ? <SavedCardsList /> : <Navigate to="/card/login" replace state={{ from: 'saved-cards' }} />}
+        element={
+          isAuthenticated ? (
+            <SavedCardsList />
+          ) : (
+            <Navigate to="/card/login" replace state={{ from: 'saved-cards' }} />
+          )
+        }
       />
 
       <Route
         path="wizard/step-1"
         element={
           <WizardStep1Entry
-            isCardAuthenticated={isCardAuthenticated}
+            isCardAuthenticated={isAuthenticated}
             hasCard={hasCard}
             profileUserId={userId}
           />
         }
       />
 
-      <Route path="wizard/step-1-feature" element={isCardAuthenticated ? <WizardStep1Feature /> : <Navigate to="/card/login" replace />} />
-      <Route path="wizard/step-1-plan" element={isCardAuthenticated ? <WizardStep1Plan /> : <Navigate to="/card/login" replace />} />
-      <Route path="wizard/step-10" element={isCardAuthenticated ? <WizardStep1Plan /> : <Navigate to="/card/login" replace />} />
-      <Route path="wizard/step-2" element={isCardAuthenticated ? <WizardStep2 /> : <Navigate to="/card/login" replace />} />
-      <Route path="wizard/step-3" element={isCardAuthenticated ? <WizardStep3 /> : <Navigate to="/card/login" replace />} />
-      <Route path="wizard/step-4" element={isCardAuthenticated ? <WizardStep4 /> : <Navigate to="/card/login" replace />} />
-      <Route path="wizard/step-5" element={isCardAuthenticated ? <WizardStep5 /> : <Navigate to="/card/login" replace />} />
-      <Route path="wizard/step-6" element={isCardAuthenticated ? <WizardStep6 /> : <Navigate to="/card/login" replace />} />
-      <Route path="wizard/step-7" element={isCardAuthenticated ? <WizardStep7 /> : <Navigate to="/card/login" replace />} />
-      <Route path="wizard/step-8" element={isCardAuthenticated ? <WizardStep8 /> : <Navigate to="/card/login" replace />} />
-      <Route path="wizard/step-9" element={isCardAuthenticated ? <WizardStep9 /> : <Navigate to="/card/login" replace />} />
+      <Route path="wizard/step-1-feature" element={isAuthenticated ? <WizardStep1Feature /> : <Navigate to="/card/login" replace />} />
+      <Route path="wizard/step-1-plan" element={isAuthenticated ? <WizardStep1Plan /> : <Navigate to="/card/login" replace />} />
+      <Route path="wizard/step-10" element={isAuthenticated ? <WizardStep1Plan /> : <Navigate to="/card/login" replace />} />
+      <Route path="wizard/step-2" element={isAuthenticated ? <WizardStep2 /> : <Navigate to="/card/login" replace />} />
+      <Route path="wizard/step-3" element={isAuthenticated ? <WizardStep3 /> : <Navigate to="/card/login" replace />} />
+      <Route path="wizard/step-4" element={isAuthenticated ? <WizardStep4 /> : <Navigate to="/card/login" replace />} />
+      <Route path="wizard/step-5" element={isAuthenticated ? <WizardStep5 /> : <Navigate to="/card/login" replace />} />
+      <Route path="wizard/step-6" element={isAuthenticated ? <WizardStep6 /> : <Navigate to="/card/login" replace />} />
+      <Route path="wizard/step-7" element={isAuthenticated ? <WizardStep7 /> : <Navigate to="/card/login" replace />} />
+      <Route path="wizard/step-8" element={isAuthenticated ? <WizardStep8 /> : <Navigate to="/card/login" replace />} />
+      <Route path="wizard/step-9" element={isAuthenticated ? <WizardStep9 /> : <Navigate to="/card/login" replace />} />
 
-      <Route path="reminders" element={isCardAuthenticated ? <RemindersList /> : <Navigate to="/card/login" replace />} />
-      <Route path="reminders/add" element={isCardAuthenticated ? <AddReminder /> : <Navigate to="/card/login" replace />} />
-      <Route path="settings" element={isCardAuthenticated ? <CardSettings /> : <Navigate to="/card/login" replace />} />
+      <Route path="reminders" element={isAuthenticated ? <RemindersList /> : <Navigate to="/card/login" replace />} />
+      <Route path="reminders/add" element={isAuthenticated ? <AddReminder /> : <Navigate to="/card/login" replace />} />
+      <Route path="settings" element={isAuthenticated ? <CardSettings /> : <Navigate to="/card/login" replace />} />
 
       <Route path="*" element={<Navigate to="/card/login" replace />} />
     </Routes>

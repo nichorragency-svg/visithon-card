@@ -11,7 +11,9 @@ import {
   FaShareAlt,
   FaSignOutAlt,
 } from 'react-icons/fa';
-import { supabase } from '../../supabase/client';
+import { clearCardSession } from '../../api/visithonApi';
+import { shareCardLink } from '../../helpers/shareCardLink';
+import VisithonLogo from '../../components/VisithonLogo';
 
 export function CardDisplayHeader({
   user,
@@ -40,15 +42,11 @@ export function CardDisplayHeader({
       } px-4 py-3.5 backdrop-blur-md`}
       style={headerInlineStyle}
     >
-      {/* --- LOGO SECTION --- */}
-      <div className="flex h-11 min-w-[44px] shrink-0 items-center justify-start">
-        <img 
-          src="/logo.png" 
-          alt="Logo" 
-          className="h-10 w-auto object-contain" // Height thori barhai hy visibility k liye
-          onError={(e) => { e.target.src = "https://cdn-icons-png.flaticon.com/512/1162/1162456.png" }}
-        />
-      </div>
+      <VisithonLogo
+        className="flex h-11 min-w-[44px] shrink-0 items-center justify-start"
+        imgClassName="h-10 w-auto object-contain"
+        alt="Logo"
+      />
 
       <h1
         className={`min-w-0 flex-1 bg-gradient-to-r ${selectedTheme.title} bg-clip-text px-1 text-center text-[10px] font-bold uppercase leading-tight tracking-[0.22em] text-transparent sm:text-[11px]`}
@@ -170,13 +168,7 @@ export function CardDisplayHeader({
               className="flex w-full items-center gap-3 border-t border-white/5 px-4 py-3 text-left text-sm text-rose-100/95 transition hover:bg-rose-500/15"
               onClick={async () => {
                 setMenuOpen(false);
-                try {
-                  if (supabase) await supabase.auth.signOut();
-                } catch {
-                  /* noop */
-                }
-                localStorage.removeItem('visithon_card_token');
-                localStorage.removeItem('visithon_user_info');
+                clearCardSession();
                 navigate('/card/login', { replace: true });
               }}
             >
@@ -188,11 +180,10 @@ export function CardDisplayHeader({
               className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-white/90 transition hover:bg-white/[0.1] border-t border-white/5 mt-1"
               onClick={() => {
                 setMenuOpen(false);
-                if (navigator.share) {
-                  navigator.share({ title: `${user.name} — Visithon`, url: window.location.href });
-                } else {
-                  navigator.clipboard?.writeText(window.location.href);
-                }
+                void shareCardLink({
+                  title: `${user?.name || 'Visithon'} — Visithon`,
+                  url: window.location.href,
+                });
               }}
             >
               <FaShareAlt className="text-lg text-emerald-300" /> Share

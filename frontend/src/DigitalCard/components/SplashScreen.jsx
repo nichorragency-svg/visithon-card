@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import VisithonLogo from '../../components/VisithonLogo';
 import './SplashScreen.css';
 
 export default function SplashScreen() {
@@ -20,7 +21,7 @@ export default function SplashScreen() {
       {/* Main Content Area */}
       <div className="splash-content">
         <div className="logo-container">
-          <img src="/logo.png" alt="Visithon Logo" className="main-logo-img" />
+          <VisithonLogo className="inline-flex" imgClassName="main-logo-img" />
           
           <div className="brand-section">
             <h1 className="brand-name">VISITHON</h1>

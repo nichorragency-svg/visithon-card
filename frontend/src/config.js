@@ -1,46 +1,67 @@
-/** Admin FastAPI — Vercel pe kabhi `REACT_APP_API_URL` naam se bhi save hota hai. */
-const rawLegacyApi = (
+/**
+ * API configuration — DigitalOcean VPS + MongoDB Atlas backend.
+ */
+
+const rawApiUrl = (
   process.env.REACT_APP_API_BASE_URL ||
   process.env.REACT_APP_API_URL ||
   ''
 ).trim();
-const sbUrlRaw = (process.env.REACT_APP_SUPABASE_URL || '').trim();
 
 function defaultProdApiBase() {
-  if (typeof window === 'undefined') {
-    return '';
-  }
+  if (typeof window === 'undefined') return '';
   const { protocol, hostname } = window.location;
+  if (hostname === '159.65.138.9') {
+    return 'http://159.65.138.9:8000';
+  }
   return `${protocol}//${hostname}:8000`;
 }
 
-/**
- * Legacy FastAPI base URL — only used by the optional Admin Panel (`/admin/*`).
- * Set `REACT_APP_API_BASE_URL` or `REACT_APP_API_URL` (same value). Not the Vercel frontend URL.
- * Production without env: same hostname as the page, port 8000 (Nginx :80 + Uvicorn :8000).
- */
 export const API_BASE_URL = (() => {
-  if (typeof rawLegacyApi !== 'undefined' && rawLegacyApi.length > 0) {
-    return rawLegacyApi.replace(/\/$/, '');
+  if (rawApiUrl.length > 0) {
+    return rawApiUrl.replace(/\/$/, '');
   }
-
   if (process.env.NODE_ENV === 'development') {
     return 'http://127.0.0.1:8000';
   }
-
-  const derived = defaultProdApiBase();
-  return derived || 'http://159.65.138.9:8000';
+  return defaultProdApiBase() || 'http://159.65.138.9:8000';
 })();
 
-export const SUPABASE_URL = sbUrlRaw.replace(/\/$/, '');
+/** Media / avatars — served from FastAPI `/static` (uploads folder). */
+export function getMediaPublicBase() {
+  return `${API_BASE_URL}/static`;
+}
 
-/** True when card app Supabase wiring is usable. */
-export const SUPABASE_CONFIGURED = !!(sbUrlRaw && (process.env.REACT_APP_SUPABASE_ANON_KEY || '').trim());
+/** @deprecated Use getMediaPublicBase — kept for imports during migration */
+export function getSupabaseMediaPublicBase() {
+  return getMediaPublicBase();
+}
+
+export const SUPABASE_CONFIGURED = false;
+export const SUPABASE_URL = '';
+
+const rawPublicAppUrl = (
+  process.env.REACT_APP_PUBLIC_APP_URL ||
+  process.env.REACT_APP_CARD_APP_URL ||
+  ''
+).trim();
 
 /**
- * Absolute base for Storage bucket `media` — public CDN URL.
+ * Origin where the React app is served (QR codes must point here, NOT the API :8000 port).
  */
-export function getSupabaseMediaPublicBase() {
-  if (!SUPABASE_URL) return '';
-  return `${SUPABASE_URL}/storage/v1/object/public/media`;
+export function getPublicCardAppOrigin() {
+  if (rawPublicAppUrl.length > 0) {
+    return rawPublicAppUrl.replace(/\/$/, '');
+  }
+  if (typeof window === 'undefined') {
+    return '';
+  }
+  const { protocol, hostname, port } = window.location;
+  if (hostname === '159.65.138.9') {
+    return port === '8000' ? 'http://159.65.138.9' : `${protocol}//${hostname}${port ? `:${port}` : ''}`;
+  }
+  if (port && port !== '80' && port !== '443') {
+    return `${protocol}//${hostname}:${port}`;
+  }
+  return `${protocol}//${hostname}`;
 }

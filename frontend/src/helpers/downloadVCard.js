@@ -1,15 +1,8 @@
+import { API_BASE_URL } from '../config';
+
 /**
- * vCard download + optional PHOTO (JPEG base64).
- *
- * Profile images are loaded with `fetch(..., { mode: 'cors', credentials: 'omit' })`, then drawn
- * to a canvas from a `blob:` URL (same-origin to the page), so the canvas is not tainted.
- *
- * If the image URL is on another host (e.g. FastAPI :8000 while the card runs on :3000 or
- * production domain), that host must respond with CORS headers (see FastAPI `CORS_ALLOWED_ORIGINS`
- * in `main.py`). Supabase Storage already sends permissive CORS for public objects.
- *
- * Mongo `/static/` on the API: ensure avatar URLs the client uses are absolute to the API
- * origin when the card app is not co-hosted, so the browser can apply the API's CORS policy.
+ * Fetches the remote profile image and converts it into a Base64 JPEG string.
+ * Configured to read from the MongoDB API static storage destination.
  */
 export async function fetchProfileImageAsBase64Jpeg(imageUrl) {
   if (!imageUrl || typeof imageUrl !== 'string') return null;
@@ -27,11 +20,13 @@ export async function fetchProfileImageAsBase64Jpeg(imageUrl) {
   }
 }
 
+/**
+ * Processes the image blob via HTML5 canvas to enforce maximum bounds and compression.
+ */
 function imageBlobToJpegBase64(blob) {
   return new Promise((resolve) => {
     const objectUrl = URL.createObjectURL(blob);
     const img = new Image();
-    /* blob: URLs are same-origin; attribute is harmless and documents intent if URL type changes */
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       try {
@@ -82,7 +77,7 @@ function normalizeUrlKey(u) {
     .toLowerCase();
 }
 
-/** RFC 2426 folding: max 75 octets per line; continuation lines start with one space. */
+/** RFC 2426 folding configuration: max 75 characters per line */
 function foldVCardLine(line) {
   const max = 75;
   if (line.length <= max) return line;
@@ -104,10 +99,12 @@ function escapeV(s) {
 }
 
 /**
- * @param {object} user
+ * Triggers a browser download for the compiled contact .vcf file.
+ * Automatically handles absolute image mapping via MongoDB static endpoint if required.
+ * * @param {object} user
  * @param {object} [options]
- * @param {string} [options.cardUrl] Full public card URL (e.g. https://visithon.com/card/view/ID)
- * @param {string} [options.profileImageUrl] HTTP(S) URL to fetch and embed as JPEG PHOTO
+ * @param {string} [options.cardUrl] Full public card view URL
+ * @param {string} [options.profileImageUrl] Image path string from MongoDB document
  */
 export async function triggerVCardDownload(user, options = {}) {
   if (!user || typeof user !== 'object') return;
@@ -119,7 +116,13 @@ export async function triggerVCardDownload(user, options = {}) {
   const site = String(user.website || '').trim();
   const uid = String(user.id || user._id || '').trim();
   const cardUrl = String(options.cardUrl || '').trim();
-  const profileImageUrl = String(options.profileImageUrl || '').trim();
+  
+  let profileImageUrl = String(options.profileImageUrl || user.avatar || '').trim();
+
+  // If the URL is relative, automatically map it to the Digital Ocean / MongoDB static route
+  if (profileImageUrl && !/^https?:\/\//i.test(profileImageUrl)) {
+    profileImageUrl = `${API_BASE_URL.replace(/\/$/, '')}/uploads/${profileImageUrl.replace(/^\/+/, '')}`;
+  }
 
   let photoB64 = null;
   if (profileImageUrl) {
@@ -161,3 +164,6 @@ export async function triggerVCardDownload(user, options = {}) {
   a.remove();
   URL.revokeObjectURL(url);
 }
+
+// Support default import if referenced by legacy components
+export default triggerVCardDownload;

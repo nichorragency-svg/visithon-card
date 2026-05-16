@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaShareAlt } from 'react-icons/fa';
-import { SUPABASE_CONFIGURED } from '../../config';
-import { fetchPublishedCardPayload } from '../../supabase/publicCardFetch';
+import { fetchPublishedCardPayload } from '../../api/visithonApi';
 import GlassShell from '../../visithon/components/GlassShell';
 import { staticUrl } from '../../visithon/utils/staticUrl';
+import { shareCardLink } from '../../helpers/shareCardLink';
+import { buildCardQrImageUrl, buildPublicCardViewUrl } from '../utils/cardPublicUrl';
 
 function resolveAvatar(u) {
   if (!u) return '';
@@ -14,37 +15,36 @@ function resolveAvatar(u) {
 }
 
 export default function LinkDevice() {
-  const { userId } = useParams();
+  const { userId: routeCardId } = useParams();
   const navigate = useNavigate();
-  const [qrImage, setQrImage] = useState('');
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const cardId = useMemo(() => String(routeCardId || '').trim(), [routeCardId]);
+  const publicCardUrl = useMemo(() => buildPublicCardViewUrl(cardId), [cardId]);
+  const qrImage = useMemo(() => buildCardQrImageUrl(cardId), [cardId]);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      if (!SUPABASE_CONFIGURED || !userId) {
-        setUser(null);
-        setQrImage('');
-        return;
-      }
-      const { payload } = await fetchPublishedCardPayload(String(userId).trim());
-      const u = payload?.data ?? null;
-      setUser(u);
-      const cardUrl = `${window.location.origin}/card/view/${encodeURIComponent(String(userId).trim())}`;
-      setQrImage(
-        `https://api.qrserver.com/v1/create-qr-code/?size=420x420&data=${encodeURIComponent(cardUrl)}`,
-      );
-    } catch (err) {
-      console.error('QR / card fetch error:', err);
-    } finally {
-      setLoading(false);
+  const [user, setUser] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(!!cardId);
+
+  const fetchProfile = useCallback(async () => {
+    if (!cardId) {
+      setUser(null);
+      setLoadingProfile(false);
+      return;
     }
-  }, [userId]);
+    setLoadingProfile(true);
+    try {
+      const { payload } = await fetchPublishedCardPayload(cardId);
+      setUser(payload?.data ?? null);
+    } catch (err) {
+      console.error('Card profile fetch:', err);
+      setUser(null);
+    } finally {
+      setLoadingProfile(false);
+    }
+  }, [cardId]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    void fetchProfile();
+  }, [fetchProfile]);
 
   const displayName = user?.name?.trim() || 'Visithon member';
   const companyName = (user?.company || '').trim();
@@ -54,34 +54,28 @@ export default function LinkDevice() {
     try {
       const raw = localStorage.getItem('visithon_user_info');
       if (!raw) return false;
-      return JSON.parse(raw).id === userId;
+      const parsed = JSON.parse(raw);
+      return String(parsed?.id || parsed?._id || '') === cardId;
     } catch {
       return false;
     }
   })();
 
-  const onShare = async () => {
-    const shareUrl = `${window.location.origin}/card/view/${userId}`;
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: `${displayName} — Visithon Card`,
-          text: 'Scan to open my digital card.',
-          url: shareUrl,
-        });
-      } else {
-        await navigator.clipboard.writeText(shareUrl);
-        alert('Card link copied to clipboard.');
-      }
-    } catch {
-      /* user cancelled share */
-    }
+  const onShare = () => {
+    if (!publicCardUrl) return;
+    void shareCardLink({
+      title: `${displayName} — Visithon Card`,
+      text: 'Scan to open my digital card.',
+      url: publicCardUrl,
+    });
   };
 
   const onCustomize = () => {
     if (isOwner) navigate('/card/wizard/step-1?edit=1', { state: { editMode: true } });
     else navigate('/card/login', { state: { from: 'customize-qr' } });
   };
+
+  const showQr = Boolean(qrImage && publicCardUrl);
 
   return (
     <GlassShell>
@@ -96,15 +90,17 @@ export default function LinkDevice() {
         </button>
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-xl font-bold tracking-tight text-white">My QR Code</h1>
+          {publicCardUrl ? (
+            <p className="mt-0.5 truncate text-[10px] text-white/40" title={publicCardUrl}>
+              {publicCardUrl}
+            </p>
+          ) : null}
         </div>
       </header>
 
       <div className="flex flex-1 flex-col items-center px-5 pb-10 pt-6">
-        {loading ? (
-          <div className="flex flex-col items-center py-16">
-            <div className="h-11 w-11 animate-spin rounded-full border-2 border-white/15 border-t-sky-400 [animation-duration:0.9s]" />
-            <p className="mt-4 text-sm text-white/45">Preparing your code…</p>
-          </div>
+        {!cardId ? (
+          <p className="py-16 text-sm text-white/50">Invalid card link.</p>
         ) : (
           <>
             <div className="w-full max-w-[min(94vw,400px)] rounded-3xl border border-white/12 bg-white px-4 pb-4 pt-5 shadow-[0_20px_50px_rgba(0,0,0,0.35)]">
@@ -117,14 +113,17 @@ export default function LinkDevice() {
                 ) : (
                   <p className="mt-1.5 text-xs text-slate-400 sm:text-sm">Visithon Card</p>
                 )}
+                {loadingProfile ? (
+                  <p className="mt-2 text-[10px] text-slate-400">Updating profile…</p>
+                ) : null}
               </div>
 
               <div className="relative">
-                {qrImage ? (
-                  <img src={qrImage} alt="" className="w-full rounded-2xl" />
+                {showQr ? (
+                  <img src={qrImage} alt="QR code for digital card" className="w-full rounded-2xl" />
                 ) : (
                   <div className="flex aspect-square min-h-[260px] items-center justify-center rounded-2xl bg-slate-100 text-slate-500 sm:min-h-[300px]">
-                    QR unavailable
+                    QR unavailable — check card id
                   </div>
                 )}
                 <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
@@ -145,16 +144,16 @@ export default function LinkDevice() {
 
             <div className="mt-8 flex w-full max-w-[min(94vw,400px)] gap-3">
               <a
-                href={qrImage || undefined}
-                download={qrImage ? `${displayName.replace(/\s+/g, '_')}_Visithon_QR.png` : undefined}
+                href={showQr ? qrImage : undefined}
+                download={showQr ? `${displayName.replace(/\s+/g, '_')}_Visithon_QR.png` : undefined}
                 className={`flex flex-1 items-center justify-center rounded-2xl py-3.5 text-center text-sm font-semibold shadow-lg transition ${
-                  qrImage
+                  showQr
                     ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-blue-900/30 hover:brightness-110'
                     : 'cursor-not-allowed bg-white/10 text-white/35'
                 }`}
-                aria-disabled={!qrImage}
+                aria-disabled={!showQr}
                 onClick={(e) => {
-                  if (!qrImage) e.preventDefault();
+                  if (!showQr) e.preventDefault();
                 }}
               >
                 Download
@@ -162,7 +161,8 @@ export default function LinkDevice() {
               <button
                 type="button"
                 onClick={onShare}
-                className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-900/30 transition hover:brightness-110"
+                disabled={!publicCardUrl}
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-900/30 transition hover:brightness-110 disabled:opacity-40"
               >
                 <FaShareAlt className="text-sm opacity-90" />
                 Share

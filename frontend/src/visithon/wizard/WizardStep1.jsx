@@ -2,9 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FaSearch } from 'react-icons/fa';
 import { apiErrorMessage } from '../../apiClient';
-import { SUPABASE_CONFIGURED } from '../../config';
-import { supabase } from '../../supabase/client';
-import { getWizardState, patchStep1Profession, refreshLocalUserInfoForSession } from '../../supabase/supabaseWizard';
+import { getWizardState, patchStep1Profession } from '../../api/visithonApi';
 import CustomButton from '../components/CustomButton';
 import GlassShell from '../components/GlassShell';
 import { STEP1_PROFESSIONS } from './constants';
@@ -25,16 +23,7 @@ export default function WizardStep1() {
     (async () => {
       try {
         const token = typeof localStorage !== 'undefined' ? localStorage.getItem('visithon_card_token') : null;
-        let authed = !!(token && String(token).trim());
-        if (!authed && SUPABASE_CONFIGURED && supabase) {
-          const {
-            data: { session },
-          } = await supabase.auth.getSession();
-          authed = !!session?.access_token;
-          if (session?.access_token) {
-            await refreshLocalUserInfoForSession(session.access_token, session).catch(() => {});
-          }
-        }
+        const authed = !!(token && String(token).trim());
         if (!authed) {
           navigate('/card/login');
           return;

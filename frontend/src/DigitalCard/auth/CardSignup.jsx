@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { FaUser, FaEnvelope, FaLock, FaGoogle, FaArrowRight, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { apiErrorMessage } from '../../apiClient';
-import { supabase } from '../../supabase/client';
-import { refreshLocalUserInfoForSession } from '../../supabase/supabaseWizard';
+import { signupWithPassword } from '../../api/visithonApi';
 import './AuthLayout.css';
 
 const CardSignup = () => {
@@ -36,39 +35,15 @@ const CardSignup = () => {
       return;
     }
 
-    if (!supabase) {
-      setError('Missing Supabase configuration. Set env vars and rebuild.');
-      return;
-    }
-
     setLoading(true);
     try {
       const fn = formData.fullName.trim();
-      const origin = typeof window !== 'undefined' ? window.location.origin : '';
-      const { data, error: signErr } = await supabase.auth.signUp({
-        email: formData.email.trim(),
-        password: formData.password,
-        options: {
-          data: { full_name: fn },
-          emailRedirectTo: origin ? `${origin}/card/login` : undefined,
-        },
-      });
-      if (signErr) throw signErr;
+      const data = await signupWithPassword(fn, formData.email.trim(), formData.password);
 
-      // With "Confirm email" on, there is often no session yet — RLS blocks upsert (401). Trigger still creates profile + full_name from metadata.
-      if (data.session && data.user?.id && fn) {
-        await supabase.from('profiles').upsert({
-          id: data.user.id,
-          full_name: fn,
-          updated_at: new Date().toISOString(),
-        });
-      }
-
-      if (data.session) {
-        await refreshLocalUserInfoForSession(data.session.access_token, data.session);
-        navigate('/card/wizard/step-1');
+      if (data?.token) {
+        navigate('/card/wizard/step-1', { replace: true });
       } else {
-        setInfo('Account created — check your email to confirm before logging in.');
+        setInfo('Account created. You can log in now.');
       }
     } catch (err) {
       setError(apiErrorMessage(err, 'Signup mein masla aya hy.'));

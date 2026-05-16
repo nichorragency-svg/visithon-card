@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaCheck } from 'react-icons/fa';
 import { apiErrorMessage } from '../../apiClient';
-import { getWizardState, patchStep1PricingPlan } from '../../supabase/supabaseWizard';
+import { getWizardState, patchStep1PricingPlan } from '../../api/visithonApi';
 import CustomButton from '../components/CustomButton';
 import GlassShell from '../components/GlassShell';
 

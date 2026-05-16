@@ -2,12 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaUniversity, FaUserAlt, FaCreditCard, FaPlus, FaTrash, FaQrcode, FaChevronDown } from 'react-icons/fa';
 import { apiErrorMessage } from '../../apiClient';
-import { supabase } from '../../supabase/client';
 import {
   finalizeBankAccountsFromWizard,
   getWizardState,
   refreshLocalUserInfoForSession,
-} from '../../supabase/supabaseWizard';
+} from '../../api/visithonApi';
 import CustomButton from '../components/CustomButton';
 import CustomInput from '../components/CustomInput';
 import GlassShell from '../components/GlassShell';
@@ -122,10 +121,8 @@ export default function WizardStep9() {
       await finalizeBankAccountsFromWizard(accounts);
 
       localStorage.removeItem('visithon_temp_accounts');
-      const {
-        data: { session: fresh },
-      } = await supabase.auth.getSession();
-      await refreshLocalUserInfoForSession(fresh?.access_token, fresh);
+      const token = localStorage.getItem('visithon_card_token');
+      await refreshLocalUserInfoForSession(token, { id: info.id, has_card: true });
 
       const ws = await getWizardState();
       const shopOn = ws.profile?.step1?.shop_portfolio_enabled === true;

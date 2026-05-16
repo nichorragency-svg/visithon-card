@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { FaEnvelope, FaLock, FaSignInAlt, FaEye, FaEyeSlash } from 'react-icons/fa';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { apiErrorMessage } from '../../apiClient';
-import { supabase } from '../../supabase/client';
-import { refreshLocalUserInfoForSession } from '../../supabase/supabaseWizard';
+import { loginWithPassword } from '../../api/visithonApi';
+import VisithonLogo from '../../components/VisithonLogo';
 import './AuthLayout.css';
 
 /** Allow post-login redirect only to in-app /card routes (blocks open redirects). */
@@ -17,7 +17,10 @@ function isSafeInternalCardPath(p) {
 const CardLogin = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [loginData, setLoginData] = useState({ email: '', password: '' });
+  const [loginData, setLoginData] = useState(() => ({
+    email: typeof location.state?.email === 'string' ? location.state.email : '',
+    password: '',
+  }));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -32,37 +35,7 @@ const CardLogin = () => {
     setLoading(true);
     setError('');
     try {
-      if (!supabase) {
-        setError('Missing Supabase configuration. Set env vars and rebuild.');
-        return;
-      }
-
-      const { error: signErr, data } = await supabase.auth.signInWithPassword({
-        email: loginData.email.trim(),
-        password: loginData.password,
-      });
-
-      if (signErr) {
-        throw signErr;
-      }
-
-      try {
-        await refreshLocalUserInfoForSession(data.session?.access_token, data.session ?? null);
-      } catch (profErr) {
-        console.warn('refreshLocalUserInfoForSession:', profErr);
-        if (data.session?.user?.id) {
-          localStorage.setItem('visithon_card_token', data.session.access_token || '');
-          localStorage.setItem(
-            'visithon_user_info',
-            JSON.stringify({
-              id: data.session.user.id,
-              email: data.session.user.email ?? '',
-              has_card: false,
-              full_name: data.session.user.user_metadata?.full_name ?? '',
-            }),
-          );
-        }
-      }
+      await loginWithPassword(loginData.email.trim(), loginData.password);
 
       let user = {};
       try {
@@ -99,7 +72,7 @@ const CardLogin = () => {
     <div className="auth-wrapper">
       <div className="auth-card">
         <div className="auth-logo-section">
-          <img src="/logo.png" alt="Visithon Logo" className="auth-logo-img" />
+          <VisithonLogo imgClassName="auth-logo-img" />
         </div>
 
         <div className="auth-header">

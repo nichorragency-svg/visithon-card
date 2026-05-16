@@ -1,39 +1,32 @@
-import { getSupabaseMediaPublicBase } from '../../config';
+import { API_BASE_URL, getMediaPublicBase } from '../../config';
 
 /**
- * Turns a backend-relative `/static/foo` reference or a bare storage path into a usable URL.
- * Full http(s) strings pass through unchanged.
+ * Resolve backend-relative paths to full URLs (`/static/...` on API host).
  */
 export function staticUrl(relativePath) {
   if (!relativePath) return '';
   const s = String(relativePath).trim();
   if (/^https?:\/\//i.test(s)) return s;
 
-  const bucketBase = getSupabaseMediaPublicBase();
-  let key = s;
+  const mediaBase = getMediaPublicBase().replace(/\/$/, '');
+  let key = s.replace(/^\/+/, '');
 
-  const staticPrefix = /^static\//;
-  const legacyQr = /^card_bank_qrs\//;
-  const legacyDigi = /^digital_cards\//;
-  const legacyProd = /^product_assets\//;
-
-  if (staticPrefix.test(key)) {
-    key = key.replace(/^static\//, '');
+  if (key.startsWith('static/')) {
+    key = key.slice('static/'.length);
   }
 
-  const mediaBase = bucketBase.replace(/\/$/, '');
   if (!mediaBase) {
     return s;
   }
 
-  if (legacyQr.test(key)) {
-    key = key.replace(/^card_bank_qrs\//, '').replace(/^\/+/, '');
-    return `${mediaBase}/${key}`.replace(/([^:])\/{2,}/g, '$1/');
-  }
-  if (legacyDigi.test(key) || legacyProd.test(key)) {
-    return `${mediaBase}/${key.replace(/^\/+/, '')}`.replace(/([^:])\/{2,}/g, '$1/');
-  }
+  return `${mediaBase}/${key}`.replace(/([^:])\/{2,}/g, '$1/');
+}
 
-  const cleaned = key.replace(/^\/+/, '');
-  return `${mediaBase}/${cleaned}`.replace(/([^:])\/{2,}/g, '$1/');
+export function uploadsUrl(relativePath) {
+  if (!relativePath) return '';
+  const s = String(relativePath).trim();
+  if (/^https?:\/\//i.test(s)) return s;
+  const base = String(API_BASE_URL || '').replace(/\/$/, '');
+  const key = s.replace(/^\/+/, '').replace(/^uploads\//, '');
+  return `${base}/static/${key}`;
 }

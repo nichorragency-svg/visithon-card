@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaLayerGroup } from 'react-icons/fa';
-import { getWizardState } from '../../supabase/supabaseWizard';
+import { getWizardState } from '../../api/visithonApi';
 import GlassShell from '../components/GlassShell';
 
 export default function CardSettings() {

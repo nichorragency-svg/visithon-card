@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaShoppingBag, FaUser } from 'react-icons/fa';
 import { apiErrorMessage } from '../../apiClient';
-import { getWizardState, patchStep1ShopFlag } from '../../supabase/supabaseWizard';
+import { getWizardState, patchStep1ShopFlag } from '../../api/visithonApi';
 import CustomButton from '../components/CustomButton';
 import GlassShell from '../components/GlassShell';
 

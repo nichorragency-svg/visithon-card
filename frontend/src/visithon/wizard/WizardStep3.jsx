@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiErrorMessage } from '../../apiClient';
-import { fetchWizardThemes, getWizardState, patchStep3 } from '../../supabase/supabaseWizard';
+import { fetchWizardThemes, getWizardState, patchStep3 } from '../../api/visithonApi';
 import CustomButton from '../components/CustomButton';
 import GlassShell from '../components/GlassShell';
 import { THEME_STYLE_BY_ID } from './themeVisuals';

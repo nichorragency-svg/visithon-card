@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { SUPABASE_CONFIGURED } from '../../config';
-import { fetchPublishedCardPayload } from '../../supabase/publicCardFetch';
+import { fetchPublishedCardPayload } from '../../api/visithonApi';
 
 export function useCardDisplayData(userId) {
   const [user, setUser] = useState(null);
@@ -11,15 +10,6 @@ export function useCardDisplayData(userId) {
     if (!userId || String(userId).trim() === '') {
       setUser(null);
       setFetchError(null);
-      setLoading(false);
-      return;
-    }
-
-    if (!SUPABASE_CONFIGURED) {
-      setUser(null);
-      setFetchError(
-        'Supabase env missing. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY, rebuild.',
-      );
       setLoading(false);
       return;
     }

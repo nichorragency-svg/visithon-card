@@ -9,7 +9,7 @@ import {
   FaUserMd,
 } from 'react-icons/fa';
 import { apiErrorMessage } from '../../apiClient';
-import { getWizardState, normalizeStep4Items, patchStep4 } from '../../supabase/supabaseWizard';
+import { getWizardState, normalizeStep4Items, patchStep4 } from '../../api/visithonApi';
 import CustomButton from '../components/CustomButton';
 import CustomInput from '../components/CustomInput';
 import GlassShell from '../components/GlassShell';
