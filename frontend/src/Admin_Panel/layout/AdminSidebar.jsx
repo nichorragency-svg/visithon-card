@@ -17,6 +17,7 @@ import {
   FaSignOutAlt,
   FaChevronRight,
   FaChartLine,
+  FaTimes,
 } from 'react-icons/fa';
 import { API_BASE_URL } from '../../config';
 import { ADMIN_TOKEN_KEY, getFastApiRoot } from '../constants';
@@ -55,8 +56,12 @@ function VisithonLogo() {
   );
 }
 
-export default function AdminSidebar() {
+export default function AdminSidebar({ mobileOpen = false, onClose }) {
   const navigate = useNavigate();
+
+  const closeMobile = () => {
+    onClose?.();
+  };
   const [profile, setProfile] = useState({ email: '', name: '' });
 
   useEffect(() => {
@@ -105,14 +110,26 @@ export default function AdminSidebar() {
     'flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-colors';
 
   return (
-    <aside className="flex w-[270px] shrink-0 flex-col border-r border-white/[0.06] bg-[#0c0e14] px-4 pb-5 pt-6">
+    <aside
+      className={`fixed inset-y-0 left-0 z-50 flex h-full w-[min(270px,88vw)] max-w-[88vw] flex-col border-r border-white/[0.06] bg-[#0c0e14] px-4 pb-5 pt-6 shadow-2xl shadow-black/50 transition-transform duration-200 ease-out md:static md:z-auto md:h-auto md:w-[270px] md:max-w-none md:shrink-0 md:translate-x-0 md:shadow-none ${
+        mobileOpen ? 'translate-x-0' : '-translate-x-full'
+      } md:translate-x-0`}
+    >
       {/* Brand */}
       <div className="flex items-center gap-3 px-1">
         <VisithonLogo />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="truncate text-[13px] font-bold uppercase tracking-[0.12em] text-white">VISITHON CARD</div>
           <div className="text-xs text-white/45">Admin Dashboard</div>
         </div>
+        <button
+          type="button"
+          onClick={closeMobile}
+          className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-white/10 text-white/70 transition hover:bg-white/[0.08] md:hidden"
+          aria-label="Close menu"
+        >
+          <FaTimes className="size-4" />
+        </button>
       </div>
 
       {/* Nav */}
@@ -122,6 +139,7 @@ export default function AdminSidebar() {
             key={to + label}
             to={to}
             end={end}
+            onClick={closeMobile}
             className={({ isActive }) =>
               `${itemClass} ${
                 isActive ? 'bg-[#5D5FEF] text-white shadow-[0_4px_20px_-4px_rgba(93,95,239,0.55)]' : 'text-white/72 hover:bg-white/[0.05] hover:text-white'
@@ -165,35 +183,35 @@ export default function AdminSidebar() {
           <div className="mt-3 grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() => navigate('/admin/create-card-user')}
+              onClick={() => { navigate('/admin/create-card-user'); closeMobile(); } }
               className="rounded-lg border border-white/10 bg-[#0c0e14]/80 px-2 py-2 text-left text-[10px] font-medium leading-tight text-white/85 hover:bg-white/[0.06]"
             >
               <span className="text-violet-300">+ </span>Create New Card
             </button>
             <button
               type="button"
-              onClick={() => navigate('/admin/create-card-user')}
+              onClick={() => { navigate('/admin/create-card-user'); closeMobile(); } }
               className="rounded-lg border border-white/10 bg-[#0c0e14]/80 px-2 py-2 text-left text-[10px] font-medium leading-tight text-white/85 hover:bg-white/[0.06]"
             >
               <span className="text-violet-300">+ </span>Add New User
             </button>
             <button
               type="button"
-              onClick={() => navigate('/admin/qr-scan')}
+              onClick={() => { navigate('/admin/qr-scan'); closeMobile(); } }
               className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-[#0c0e14]/80 px-2 py-2 text-left text-[10px] font-medium text-white/85 hover:bg-white/[0.06]"
             >
               <FaQrcode className="size-3 shrink-0 text-violet-300" aria-hidden /> Generate QR
             </button>
             <button
               type="button"
-              onClick={() => navigate('/admin/analytics')}
+              onClick={() => { navigate('/admin/analytics'); closeMobile(); } }
               className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-[#0c0e14]/80 px-2 py-2 text-left text-[10px] font-medium text-white/85 hover:bg-white/[0.06]"
             >
               <FaChartLine className="size-3 shrink-0 text-violet-300" aria-hidden /> Analytics
             </button>
             <button
               type="button"
-              onClick={() => navigate('/admin/templates')}
+              onClick={() => { navigate('/admin/templates'); closeMobile(); } }
               className="col-span-2 rounded-lg border border-indigo-300/25 bg-indigo-500/10 px-2 py-2 text-left text-[10px] font-medium text-indigo-200 hover:bg-indigo-500/20"
             >
               Open Templates & Themes
