@@ -1,27 +1,50 @@
 // Registers `public/service-worker.js` (copied to build root on `npm run build`).
 
+import { notifyPwaUpdateAvailable } from './pwa/pwaUpdateController';
+
 const isLocalhost = Boolean(
   window.location.hostname === 'localhost' ||
     window.location.hostname === '[::1]' ||
     window.location.hostname.match(/^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/),
 );
 
+function handleWaitingWorker(registration, config) {
+  if (!registration?.waiting) return;
+  if (config?.onUpdate) {
+    config.onUpdate(registration);
+  }
+  notifyPwaUpdateAvailable(registration);
+}
+
 function registerValidSW(swUrl, config) {
   navigator.serviceWorker
     .register(swUrl)
     .then((registration) => {
+      handleWaitingWorker(registration, config);
+
       registration.onupdatefound = () => {
         const installingWorker = registration.installing;
         if (!installingWorker) return;
         installingWorker.onstatechange = () => {
           if (installingWorker.state !== 'installed') return;
           if (navigator.serviceWorker.controller) {
-            if (config?.onUpdate) config.onUpdate(registration);
+            handleWaitingWorker(registration, config);
           } else if (config?.onSuccess) {
             config.onSuccess(registration);
           }
         };
       };
+
+      const checkForUpdates = () => {
+        registration.update().catch(() => {});
+      };
+
+      window.addEventListener('focus', checkForUpdates);
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') checkForUpdates();
+      });
+
+      window.setInterval(checkForUpdates, 60 * 60 * 1000);
     })
     .catch((error) => {
       console.error('Service worker registration failed:', error);
@@ -53,11 +76,6 @@ function checkValidServiceWorker(swUrl, config) {
 export function register(config) {
   if (process.env.NODE_ENV !== 'production' || !('serviceWorker' in navigator)) {
     return;
-  }
-
-  const publicUrl = process.env.PUBLIC_URL;
-  if (publicUrl && publicUrl.indexOf('.') === 0 && publicUrl.indexOf('http') !== 0) {
-    // Relative PUBLIC_URL — skip invalid SW path in subdirectory edge cases.
   }
 
   const swUrl = `${process.env.PUBLIC_URL || ''}/service-worker.js`;

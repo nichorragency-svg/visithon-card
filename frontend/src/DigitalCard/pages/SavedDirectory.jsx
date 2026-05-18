@@ -23,7 +23,7 @@ function ContactAvatar({ name, avatarPath }) {
   const initials = initialsFromName(name);
 
   return (
-    <div className="mx-auto flex aspect-square w-full max-w-[108px] items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-slate-700 to-slate-900 ring-2 ring-white/10 shadow-lg shadow-black/40">
+    <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-slate-700 to-slate-900 text-lg font-bold text-sky-300/95 shadow-md ring-1 ring-white/10 sm:h-20 sm:w-20">
       {src ? (
         <img
           src={src}
@@ -33,7 +33,7 @@ function ContactAvatar({ name, avatarPath }) {
           onError={() => setImgFailed(true)}
         />
       ) : (
-        <span className="text-2xl font-bold tracking-tight text-sky-300/95">{initials}</span>
+        <span className="tracking-tight">{initials}</span>
       )}
     </div>
   );
@@ -90,101 +90,105 @@ export default function SavedDirectory() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#0a0e17] text-white">
-      <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-[#0a0e17]/95 px-4 pb-3 pt-4 backdrop-blur-md">
-        <div className="mb-3 flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/80 transition active:scale-95 hover:bg-white/10"
-            aria-label="Back"
-          >
-            <FaArrowLeft />
-          </button>
-          <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-white/10 bg-[#141a26] px-4 py-2.5 shadow-inner">
-            <FaSearch className="shrink-0 text-lg text-white/35" aria-hidden />
-            <input
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search contacts..."
-              className="min-w-0 flex-1 bg-transparent text-sm text-white placeholder:text-white/35 outline-none"
-              autoComplete="off"
-            />
+      <header className="sticky top-0 z-30 border-b border-white/[0.06] bg-[#0a0e17]/95 backdrop-blur-md">
+        <div className="mx-auto w-full max-w-md px-4 pb-3 pt-4">
+          <div className="mb-3 flex items-center gap-2">
             <button
               type="button"
-              className="shrink-0 text-lg text-white/35 transition active:scale-90"
-              aria-label="Voice search"
-              onClick={() => {}}
+              onClick={() => navigate(-1)}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/80 transition active:scale-95 hover:bg-white/10"
+              aria-label="Back"
             >
-              <FaMicrophone />
+              <FaArrowLeft />
+            </button>
+            <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-white/10 bg-[#141a26] px-4 py-2.5 shadow-inner">
+              <FaSearch className="shrink-0 text-lg text-white/35" aria-hidden />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search contacts..."
+                className="min-w-0 flex-1 bg-transparent text-sm text-white placeholder:text-white/35 outline-none"
+                autoComplete="off"
+              />
+              <button
+                type="button"
+                className="shrink-0 text-lg text-white/35 transition active:scale-90"
+                aria-label="Voice search"
+                onClick={() => {}}
+              >
+                <FaMicrophone />
+              </button>
+            </div>
+            <button
+              type="button"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-sky-500/30 bg-sky-500/15 text-sky-300 transition active:scale-95"
+              aria-label="Add contact"
+              onClick={() => navigate('/card/scan')}
+            >
+              <span className="text-xl leading-none">+</span>
             </button>
           </div>
-          <button
-            type="button"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-sky-500/30 bg-sky-500/15 text-sky-300 transition active:scale-95"
-            aria-label="Add contact"
-            onClick={() => navigate('/card/scan')}
-          >
-            <span className="text-xl leading-none">+</span>
-          </button>
-        </div>
 
-        <div className="flex items-center justify-between px-1">
-          <nav className="flex items-center gap-5 text-sm font-semibold">
-            <span className="text-white/35">History</span>
-            <span className="text-sky-400">Contacts</span>
-            <span className="text-white/35">Favorites</span>
-          </nav>
-          <button
-            type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-white/40 transition active:scale-95 hover:bg-white/5"
-            aria-label="Menu"
-          >
-            <FaBars />
-          </button>
+          <div className="flex items-center justify-between px-1">
+            <nav className="flex items-center gap-5 text-sm font-semibold">
+              <span className="text-white/35">History</span>
+              <span className="text-sky-400">Contacts</span>
+              <span className="text-white/35">Favorites</span>
+            </nav>
+            <button
+              type="button"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-white/40 transition active:scale-95 hover:bg-white/5"
+              aria-label="Menu"
+            >
+              <FaBars />
+            </button>
+          </div>
         </div>
       </header>
 
-      <main className="min-h-0 flex-1 overflow-y-auto px-3 pb-10 pt-4">
-        {loading ? (
-          <p className="py-16 text-center text-sm text-white/45">Loading contacts…</p>
-        ) : filtered.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-14 text-center">
-            <p className="text-sm text-white/55">No saved contacts yet.</p>
-            <p className="mt-2 text-xs text-white/35">
-              Open a Visithon card and tap <strong className="text-white/55">Save contact</strong> to add
-              them here.
-            </p>
-            <button
-              type="button"
-              onClick={() => navigate('/card/scan')}
-              className="mt-6 rounded-full bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white transition active:scale-95 hover:bg-sky-500"
-            >
-              Scan a card
-            </button>
-          </div>
-        ) : (
-          <ul className="grid grid-cols-3 gap-x-2 gap-y-6 sm:gap-x-3">
-            {filtered.map((c) => {
-              const id = String(c.card_user_id || '').trim();
-              const name = (c.name || 'Contact').trim();
-              return (
-                <li key={id}>
-                  <button
-                    type="button"
-                    onClick={() => openCard(id)}
-                    className="group flex w-full flex-col items-center gap-2 rounded-2xl p-1 transition active:scale-[0.96] active:opacity-90"
-                  >
-                    <ContactAvatar name={name} avatarPath={c.avatar_path} />
-                    <span className="line-clamp-2 w-full px-0.5 text-center text-[13px] font-medium leading-tight text-white/92 group-hover:text-sky-200">
-                      {name}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+      <main className="min-h-0 flex-1 overflow-y-auto pb-10">
+        <div className="mx-auto w-full max-w-md px-4 py-2">
+          {loading ? (
+            <p className="py-16 text-center text-sm text-white/45">Loading contacts…</p>
+          ) : filtered.length === 0 ? (
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-14 text-center">
+              <p className="text-sm text-white/55">No saved contacts yet.</p>
+              <p className="mt-2 text-xs text-white/35">
+                Open a Visithon card and tap <strong className="text-white/55">Save contact</strong> to add
+                them here.
+              </p>
+              <button
+                type="button"
+                onClick={() => navigate('/card/scan')}
+                className="mt-6 rounded-full bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white transition active:scale-95 hover:bg-sky-500"
+              >
+                Scan a card
+              </button>
+            </div>
+          ) : (
+            <ul className="grid grid-cols-3 gap-4 justify-items-center sm:grid-cols-4 md:grid-cols-5">
+              {filtered.map((c) => {
+                const id = String(c.card_user_id || '').trim();
+                const name = (c.name || 'Contact').trim();
+                return (
+                  <li key={id} className="w-full max-w-[88px]">
+                    <button
+                      type="button"
+                      onClick={() => openCard(id)}
+                      className="group flex w-full flex-col items-center rounded-xl p-1 transition-transform active:scale-95"
+                    >
+                      <ContactAvatar name={name} avatarPath={c.avatar_path} />
+                      <span className="mt-2 max-w-[80px] truncate text-center text-xs font-medium line-clamp-1 text-white/92 transition-colors group-hover:text-sky-200 sm:text-sm">
+                        {name}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
       </main>
     </div>
   );

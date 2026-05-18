@@ -11,3 +11,18 @@ body,
 body {
   @apply bg-slate-950 text-white;
 }
+
+@keyframes pwa-slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-pwa-slide-up {
+  animation: pwa-slide-up 0.35s ease-out;
+}

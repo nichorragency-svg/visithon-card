@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import DigitalCardRoutes from './DigitalCard/DigitalCardRoutes';
 import AdminShortcutListener from './Admin_Panel/AdminShortcutListener';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
+import PwaUpdatePrompt from './components/PwaUpdatePrompt';
 
 const AdminRoutes = lazy(() => import('./Admin_Panel/AdminRoutes'));
 
@@ -11,6 +12,7 @@ function App() {
     <Router>
       <AdminShortcutListener />
       <PwaInstallPrompt />
+      <PwaUpdatePrompt />
       <div className="min-h-screen w-full overflow-x-hidden bg-slate-950">
         <Routes>
           <Route path="/card/*" element={<DigitalCardRoutes />} />

@@ -18,4 +18,10 @@ root.render(
 reportWebVitals();
 
 // Production PWA: registers `/service-worker.js` from the build output.
-serviceWorkerRegistration.register();
+serviceWorkerRegistration.register({
+  onUpdate: (registration) => {
+    if (registration?.waiting) {
+      console.info('[PWA] New version ready — update prompt shown.');
+    }
+  },
+});
