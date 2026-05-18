@@ -76,19 +76,44 @@ async def list_contacts(owner_user_id: str = Depends(_user_id_from_token)):
     except PyMongoError as exc:
         raise HTTPException(status_code=503, detail="Database error") from exc
 
+    card_ids: list[ObjectId] = []
+    for doc in docs:
+        cid = str(doc.get("card_user_id") or "").strip()
+        if ObjectId.is_valid(cid):
+            card_ids.append(ObjectId(cid))
+
+    live_avatars: dict[str, str] = {}
+    live_names: dict[str, str] = {}
+    if card_ids:
+        try:
+            card_docs = await visithon_collection.find({"_id": {"$in": card_ids}}).to_list(
+                len(card_ids)
+            )
+            for card_doc in card_docs:
+                snap = _card_snapshot(card_doc)
+                uid = snap["card_user_id"]
+                live_avatars[uid] = snap.get("avatar_path") or ""
+                live_names[uid] = snap.get("name") or ""
+        except PyMongoError as exc:
+            raise HTTPException(status_code=503, detail="Database error") from exc
+
     items = []
     for doc in docs:
         card_id = str(doc.get("card_user_id") or "").strip()
         if not card_id:
             continue
-        name = str(doc.get("name") or "").strip()
-        avatar_path = str(doc.get("avatar_path") or "").strip()
+        name = str(doc.get("name") or "").strip() or live_names.get(card_id) or "Visithon contact"
+        avatar_path = (
+            str(doc.get("avatar_path") or "").strip()
+            or live_avatars.get(card_id, "")
+        )
         saved_at = doc.get("saved_at") or doc.get("updated_at")
         items.append(
             {
                 "card_user_id": card_id,
-                "name": name or "Visithon contact",
+                "name": name,
                 "avatar_path": avatar_path,
+                "imageurl": avatar_path,
                 "saved_at": saved_at.isoformat() if hasattr(saved_at, "isoformat") else saved_at,
             }
         )
