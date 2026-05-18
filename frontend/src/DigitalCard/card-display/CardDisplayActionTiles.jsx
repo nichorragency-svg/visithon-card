@@ -1,6 +1,6 @@
 import React from 'react';
 import { FaAddressBook, FaBookmark, FaIdCard, FaShoppingBasket, FaWhatsapp } from 'react-icons/fa';
-import { triggerVCardDownload } from '../utils/downloadVCard';
+import { saveContactWithVcf } from '../utils/saveContactWithVcf';
 
 export function CardDisplayActionTiles({
   navigate,
@@ -31,11 +31,6 @@ export function CardDisplayActionTiles({
   const bookmarkInk = isWalletSaved ? '#fbbf24' : isLightTheme ? '#64748b' : '#f8fafc';
   const myCardsInk = isLightTheme ? '#0369a1' : '#7dd3fc';
 
-  const cardLiveUrl =
-    typeof window !== 'undefined' && userId
-      ? `${window.location.origin}/card/view/${encodeURIComponent(String(userId).trim())}`
-      : '';
-
   return (
     <div className="mt-8">
       <div className="flex flex-wrap items-center justify-center gap-6 px-4 sm:gap-8">
@@ -44,13 +39,15 @@ export function CardDisplayActionTiles({
           <button
             type="button"
             onClick={() =>
-              void triggerVCardDownload(user, {
-                cardUrl: cardLiveUrl,
+              void saveContactWithVcf({
+                user,
+                userId,
                 profileImageUrl: String(profileImageUrl || '').trim(),
+                hasToken,
               })
             }
             className={bareIconClass}
-            title="Save contact"
+            title="Save contact to phone & Visithon directory"
           >
             <FaAddressBook className={stSvTile.icon} />
           </button>

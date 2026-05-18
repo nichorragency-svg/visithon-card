@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { FaPhoneAlt, FaQrcode, FaCopy, FaTimes, FaUniversity } from 'react-icons/fa';
-import { triggerVCardDownload } from '../utils/downloadVCard';
+import { saveContactWithVcf } from '../utils/saveContactWithVcf';
 import { staticUrl } from '../../visithon/utils/staticUrl';
 import { resolveAvatar } from '../card-display/helpers';
 
@@ -9,15 +9,13 @@ const ActionButtons = ({ user }) => {
 
     const handleSaveContact = () => {
         const uid = String(user?.id || user?._id || '').trim();
-        const cardUrl =
-            typeof window !== 'undefined' && uid
-                ? `${window.location.origin}/card/view/${encodeURIComponent(uid)}`
-                : '';
         const profileImageUrl =
             user && (user.avatar_static_path || user.legacy_profile_img)
                 ? resolveAvatar(user)
                 : '';
-        void triggerVCardDownload(user, { cardUrl, profileImageUrl });
+        const hasToken =
+            typeof localStorage !== 'undefined' && !!localStorage.getItem('visithon_card_token');
+        void saveContactWithVcf({ user, userId: uid, profileImageUrl, hasToken });
     };
 
     const copyToClipboard = (text) => {

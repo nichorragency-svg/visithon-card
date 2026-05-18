@@ -49,6 +49,11 @@ export function CardDisplayProfile({
                   src={resolveAvatar(user)}
                   alt=""
                   className="aspect-square w-full rounded-full object-cover ring-1 ring-white/20"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src =
+                      'https://placehold.co/200x200/0f172a/64748b?text=V';
+                  }}
                 />
               </div>
             </div>

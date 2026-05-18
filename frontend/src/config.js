@@ -10,9 +10,15 @@ const rawApiUrl = (
 
 function defaultProdApiBase() {
   if (typeof window === 'undefined') return '';
-  const { protocol, hostname } = window.location;
+  const { protocol, hostname, origin } = window.location;
+  if (hostname === 'visithon.eventthone.com' || hostname.endsWith('.eventthone.com')) {
+    return `${origin}/api`;
+  }
   if (hostname === '159.65.138.9') {
     return 'http://159.65.138.9:8000';
+  }
+  if (protocol === 'https:') {
+    return `${origin}/api`;
   }
   return `${protocol}//${hostname}:8000`;
 }
@@ -57,6 +63,9 @@ export function getPublicCardAppOrigin() {
     return '';
   }
   const { protocol, hostname, port } = window.location;
+  if (hostname === 'visithon.eventthone.com' || hostname.endsWith('.eventthone.com')) {
+    return origin.replace(/\/$/, '');
+  }
   if (hostname === '159.65.138.9') {
     return port === '8000' ? 'http://159.65.138.9' : `${protocol}//${hostname}${port ? `:${port}` : ''}`;
   }

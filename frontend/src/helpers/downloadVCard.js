@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '../config';
+import { staticUrl } from '../visithon/utils/staticUrl';
 
 /**
  * Fetches the remote profile image and converts it into a Base64 JPEG string.
@@ -117,12 +117,7 @@ export async function triggerVCardDownload(user, options = {}) {
   const uid = String(user.id || user._id || '').trim();
   const cardUrl = String(options.cardUrl || '').trim();
   
-  let profileImageUrl = String(options.profileImageUrl || user.avatar || '').trim();
-
-  // If the URL is relative, automatically map it to the Digital Ocean / MongoDB static route
-  if (profileImageUrl && !/^https?:\/\//i.test(profileImageUrl)) {
-    profileImageUrl = `${API_BASE_URL.replace(/\/$/, '')}/uploads/${profileImageUrl.replace(/^\/+/, '')}`;
-  }
+  let profileImageUrl = staticUrl(String(options.profileImageUrl || user.avatar || '').trim());
 
   let photoB64 = null;
   if (profileImageUrl) {

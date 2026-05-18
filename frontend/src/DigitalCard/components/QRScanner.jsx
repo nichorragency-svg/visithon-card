@@ -1,27 +1,67 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaTimes } from 'react-icons/fa';
 import GlassShell from '../../visithon/components/GlassShell';
 import { buildPublicCardViewUrl, cardViewRoutePath, parseCardIdFromScanText } from '../utils/cardPublicUrl';
 import { upsertSavedCard } from '../utils/savedCardsStorage';
 
+const SCAN_CONFIG = {
+  fps: 15,
+  qrbox: { width: 260, height: 260 },
+  aspectRatio: 1.0,
+};
+
+const BACK_CAMERA_ATTEMPTS = [
+  { facingMode: { exact: 'environment' } },
+  { facingMode: 'environment' },
+  { facingMode: { ideal: 'environment' } },
+];
+
 function isLoggedInForWallet() {
   return typeof localStorage !== 'undefined' && !!localStorage.getItem('visithon_card_token');
 }
 
+async function pickRearCameraId() {
+  const cameras = await Html5Qrcode.getCameras();
+  if (!cameras?.length) return null;
+  const rear = cameras.find((cam) => /back|rear|environment|trás|arrière/i.test(cam.label || ''));
+  return rear?.id || cameras[cameras.length - 1]?.id || cameras[0]?.id;
+}
+
+async function startRearCamera(html5Qr, onSuccess, onError) {
+  let lastError;
+  for (const constraints of BACK_CAMERA_ATTEMPTS) {
+    try {
+      await html5Qr.start(constraints, SCAN_CONFIG, onSuccess, onError);
+      return;
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  const cameraId = await pickRearCameraId();
+  if (cameraId) {
+    await html5Qr.start(cameraId, SCAN_CONFIG, onSuccess, onError);
+    return;
+  }
+
+  throw lastError || new Error('Unable to open back camera');
+}
+
 const QRScanner = () => {
   const [scanResult, setScanResult] = useState(null);
+  const [cameraError, setCameraError] = useState('');
   const navigate = useNavigate();
   const handledRef = useRef(false);
+  const scannerRef = useRef(null);
 
   useEffect(() => {
-    const scanner = new Html5QrcodeScanner('reader', {
-      qrbox: { width: 260, height: 260 },
-      fps: 15,
-      rememberLastUsedCamera: true,
-      aspectRatio: 1.0,
-    });
+    handledRef.current = false;
+    setCameraError('');
+
+    const html5Qr = new Html5Qrcode('reader', { verbose: false });
+    scannerRef.current = html5Qr;
 
     const onScanSuccess = (decodedText) => {
       if (handledRef.current) return;
@@ -35,7 +75,13 @@ const QRScanner = () => {
       }
 
       handledRef.current = true;
-      scanner.clear().catch(() => {});
+      html5Qr
+        .stop()
+        .catch(() => {})
+        .finally(() => {
+          scannerRef.current = null;
+        });
+
       setScanResult(cardId);
 
       const route = cardViewRoutePath(cardId);
@@ -48,10 +94,24 @@ const QRScanner = () => {
       navigate(route, { replace: true });
     };
 
-    scanner.render(onScanSuccess, () => {});
+    const onScanError = () => {};
+
+    void startRearCamera(html5Qr, onScanSuccess, onScanError).catch((err) => {
+      const msg =
+        err?.message ||
+        'Could not open the back camera. Allow camera access and try again.';
+      setCameraError(msg);
+    });
 
     return () => {
-      scanner.clear().catch(() => {});
+      const active = scannerRef.current;
+      scannerRef.current = null;
+      if (!active) return;
+      if (active.isScanning) {
+        active.stop().catch(() => {});
+      } else {
+        active.clear();
+      }
     };
   }, [navigate]);
 
@@ -74,8 +134,12 @@ const QRScanner = () => {
 
       <div className="flex flex-1 flex-col px-5 pb-8 pt-4">
         <div className="relative overflow-hidden rounded-2xl border border-white/12 bg-black/40 shadow-inner">
-          <div id="reader" className="min-h-[280px]" />
+          <div id="reader" className="min-h-[280px] w-full" />
         </div>
+
+        {cameraError ? (
+          <p className="mt-3 text-center text-sm text-rose-300/90">{cameraError}</p>
+        ) : null}
 
         {scanResult && (
           <p className="mt-4 text-center text-sm font-medium text-emerald-300/90">Opening card…</p>
@@ -94,16 +158,15 @@ const QRScanner = () => {
       <style>{`
         #reader { border: none !important; }
         #reader img { display: none !important; }
-        #reader__dashboard_section_csr button {
-          background: linear-gradient(to right, #2563eb, #4f46e5) !important;
-          color: white !important;
-          border: none !important;
-          padding: 10px 18px !important;
-          border-radius: 12px !important;
-          cursor: pointer !important;
-          margin-top: 10px !important;
+        #reader video {
+          width: 100% !important;
+          height: auto !important;
+          object-fit: cover !important;
         }
-        #reader__status_span { color: rgba(255,255,255,0.55) !important; }
+        #reader__scan_region { background: #020617 !important; }
+        #reader__dashboard_section,
+        #reader__dashboard_section_csr,
+        #reader__header_message { display: none !important; }
         .modern-scanner, #reader { background: #020617 !important; }
       `}</style>
     </GlassShell>

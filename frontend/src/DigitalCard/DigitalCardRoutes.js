@@ -22,7 +22,7 @@ import WizardStep9 from '../visithon/wizard/WizardStep9';
 import RemindersList from '../visithon/reminders/RemindersList';
 import AddReminder from '../visithon/reminders/AddReminder';
 import CardSettings from '../visithon/settings/CardSettings';
-import SavedCardsList from './pages/SavedCardsList';
+import SavedDirectory from './pages/SavedDirectory';
 import ManualPaymentSubmit from './pages/ManualPaymentSubmit';
 
 /** Lets existing card holders open wizard again when coming from Edit (avoid redirect back to `/card/view`). */
@@ -93,7 +93,7 @@ const DigitalCardRoutesComp = () => {
         path="saved"
         element={
           isAuthenticated ? (
-            <SavedCardsList />
+            <SavedDirectory />
           ) : (
             <Navigate to="/card/login" replace state={{ from: 'saved-cards' }} />
           )

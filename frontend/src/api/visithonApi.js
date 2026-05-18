@@ -375,3 +375,17 @@ export function clearCardSession() {
   localStorage.removeItem('visithon_card_token');
   localStorage.removeItem('visithon_user_info');
 }
+
+/** Save a scanned/viewed card into the Visithon contacts directory (requires card-user JWT). */
+export async function saveContactToDirectory(cardId) {
+  const id = String(cardId || '').trim();
+  if (!id) throw new Error('card_id required');
+  const { data } = await apiClient.post('/contacts/save', { card_id: id });
+  return data;
+}
+
+/** List saved directory contacts for the logged-in card user. */
+export async function listSavedContacts() {
+  const { data } = await apiClient.get('/contacts/list');
+  return Array.isArray(data?.items) ? data.items : [];
+}
