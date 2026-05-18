@@ -14,8 +14,11 @@ from digital_card.card_auth import hash_password
 from database import admins_collection, themes_collection
 from admin_panel.mongo_cards_source import list_mongo_admin_card_rows, set_mongo_card_status
 from admin_panel.auth_deps import ADMIN_SECRET, ADMIN_ALGORITHM, admin_from_token
-from admin_panel.mongo_users_source import list_mongo_app_user_rows
-from digital_card.mongo_users_service import create_visithon_user_with_card, email_taken_anywhere
+from admin_panel.mongo_users_source import (
+    admin_card_edit_session,
+    list_mongo_app_user_rows,
+    provision_card_user_from_admin,
+)
 
 router = APIRouter()
 
@@ -224,27 +227,8 @@ async def delete_theme(theme_id: str, _: dict = Depends(admin_from_token)):
 
 
 async def _provision_card_user_impl(data: dict) -> dict:
-    """Create Mongo `users` row + linked `visithon_cards` doc (JWT login uses card _id)."""
-    email = str(data.get("email") or "").lower().strip()
-    password = str(data.get("password") or "")
-    full_name = str(data.get("full_name") or data.get("name") or "").strip()
-    if not email or not password:
-        raise HTTPException(status_code=400, detail="email and password are required")
-    if len(password) < 8:
-        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
-    if await email_taken_anywhere(email):
-        raise HTTPException(status_code=400, detail="Email is already registered.")
-    try:
-        user_id, card_id = await create_visithon_user_with_card(
-            full_name=full_name or email.split("@")[0],
-            email=email,
-            password=password,
-        )
-    except HTTPException:
-        raise
-    except PyMongoError as exc:
-        raise HTTPException(status_code=503, detail="Database error") from exc
-    return {"ok": True, "user_id": user_id, "card_id": card_id, "email": email}
+    """MongoDB only — see admin_panel.mongo_users_source.provision_card_user_from_admin."""
+    return await provision_card_user_from_admin(data)
 
 
 @router.get("/app-users")
@@ -267,6 +251,12 @@ async def provision_card_user(data: dict = Body(...), _: dict = Depends(admin_fr
 @router.post("/create-card-user")
 async def create_card_user_alias(data: dict = Body(...), _: dict = Depends(admin_from_token)):
     return await _provision_card_user_impl(data)
+
+
+@router.post("/card-session/{card_id}")
+async def post_card_edit_session(card_id: str, _: dict = Depends(admin_from_token)):
+    """Mint card-user JWT for admin → wizard edit (keeps admin token separate on the client)."""
+    return await admin_card_edit_session(card_id)
 
 
 @router.get("/all-cards")

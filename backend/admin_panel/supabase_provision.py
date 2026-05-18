@@ -1,4 +1,7 @@
-"""Create Supabase Auth users with confirmed email (admin-only; service role on server)."""
+"""
+DEPRECATED — Visithon admin provisioning uses MongoDB only (`mongo_users_source.provision_card_user_from_admin`).
+Kept for reference; not imported by the admin router.
+"""
 from __future__ import annotations
 import os
 import httpx

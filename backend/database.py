@@ -6,7 +6,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
-MONGO_DETAILS = os.getenv("MONGO_URI", "").strip()
+MONGO_DETAILS = (os.getenv("MONGO_URI") or os.getenv("MONGODB_URL") or "").strip()
 if not MONGO_DETAILS:
     raise RuntimeError(
         "MONGO_URI missing. Copy backend/.env.example to backend/.env and set MONGO_URI."
@@ -39,3 +39,6 @@ user_collection = database.get_collection("users")
 # Platform manual payment (admin bank + user proof submissions)
 platform_payment_settings_collection = database.get_collection("visithon_platform_payment_settings")
 manual_payment_requests_collection = database.get_collection("visithon_manual_payment_requests")
+
+# Saved Visithon cards directory (per logged-in card user)
+visithon_saved_contacts_collection = database.get_collection("visithon_saved_contacts")

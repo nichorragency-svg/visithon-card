@@ -1,6 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
+import os
+import shutil
+import time
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from bson import ObjectId
-from database import visithon_collection
+from database import visithon_collection, themes_collection
 from .wizard_utils import _user_id_from_token
 from .wizard_steps import (
     step1, step2, step3, step4, step5, 
@@ -21,6 +26,56 @@ router.include_router(step7.router, prefix="/wizard", tags=["Step 7"])
 router.include_router(step8.router, prefix="/wizard", tags=["Step 8"])
 # Step 9 ka route frontend k mutabiq card-auth ya wizard k sath adjust ho skta hy
 router.include_router(step9.router, prefix="/card-auth", tags=["Step 9"])
+
+_UPLOAD_ROOT = os.path.join("uploads", "digital_cards")
+os.makedirs(_UPLOAD_ROOT, exist_ok=True)
+
+
+@router.get("/themes")
+async def list_wizard_themes():
+    """Active themes for wizard step 3 (no admin token required)."""
+    try:
+        cursor = themes_collection.find({"is_active": True}).sort("created_at", -1)
+        docs = await cursor.to_list(length=200)
+    except Exception:
+        docs = []
+    themes = [
+        {
+            "id": str(d.get("layout_key") or ""),
+            "name": d.get("name") or d.get("layout_key"),
+            "subtitle": str(d.get("category") or ""),
+            "category": d.get("category") or "professional",
+            "preview_url": d.get("preview_url") or "",
+        }
+        for d in docs
+        if d.get("layout_key")
+    ]
+    return {"themes": themes}
+
+
+@router.post("/upload")
+async def upload_wizard_media(
+    file: UploadFile = File(...),
+    kind: str = Form("image"),
+    uid: str = Depends(_user_id_from_token),
+):
+    """Avatar / gallery uploads — served under /static/digital_cards/…"""
+    ext = (file.filename or "file").rsplit(".", 1)[-1].lower() if file.filename else "jpg"
+    if ext not in ("jpg", "jpeg", "png", "webp", "gif", "mp4", "webm"):
+        ext = "jpg"
+    sub = "avatar" if kind == "avatar" else "gallery"
+    fname = f"{sub}_{uid}_{int(time.time() * 1000)}.{ext}"
+    dest = os.path.join(_UPLOAD_ROOT, fname)
+    with open(dest, "wb") as out:
+        shutil.copyfileobj(file.file, out)
+    rel = f"digital_cards/{fname}"
+    if kind == "avatar":
+        await visithon_collection.update_one(
+            {"_id": ObjectId(uid)},
+            {"$set": {"profile.step2.avatar_url": rel, "profile_format_version": 2}},
+        )
+    return {"ok": True, "url": rel, "id": fname}
+
 
 # --- SHARED WIZARD ENDPOINTS ---
 

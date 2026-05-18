@@ -13,6 +13,7 @@ from digital_card import (
     card_auth,
     card_management,
     card_view,
+    contacts,
     vcard_handler,
     qr_handler,
     bank_handler,
@@ -26,6 +27,7 @@ app = FastAPI(title="Visithon Card API")
 
 # Browser origin for this VPS (React on :80 / Nginx → API on :8000). Always merged into allow_origins.
 _VPS_BROWSER_ORIGIN = "http://159.65.138.9"
+_HTTPS_APP_ORIGIN = "https://visithon.eventthone.com"
 _LOCAL_DEV_ORIGINS = (
     "http://127.0.0.1:3000",
     "http://localhost:3000",
@@ -63,7 +65,7 @@ def _cors_settings() -> tuple[list[str], bool, str | None]:
     creds = os.getenv("CORS_ALLOW_CREDENTIALS", "true").strip().lower() in ("1", "true", "yes")
 
     if not raw and not regex:
-        origins = _dedupe_origins([*_LOCAL_DEV_ORIGINS, _VPS_BROWSER_ORIGIN])
+        origins = _dedupe_origins([*_LOCAL_DEV_ORIGINS, _VPS_BROWSER_ORIGIN, _HTTPS_APP_ORIGIN])
         return (origins, creds, None)
 
     origins = [o.strip() for o in raw.replace("\n", ",").split(",") if o.strip()]
@@ -71,10 +73,10 @@ def _cors_settings() -> tuple[list[str], bool, str | None]:
         origins = _dedupe_origins([*_LOCAL_DEV_ORIGINS, _VPS_BROWSER_ORIGIN])
         return (origins, creds, regex)
     if not origins:
-        origins = _dedupe_origins([*_LOCAL_DEV_ORIGINS, _VPS_BROWSER_ORIGIN])
+        origins = _dedupe_origins([*_LOCAL_DEV_ORIGINS, _VPS_BROWSER_ORIGIN, _HTTPS_APP_ORIGIN])
         return (origins, creds, regex)
 
-    origins = _dedupe_origins([*origins, _VPS_BROWSER_ORIGIN, *_LOCAL_DEV_ORIGINS])
+    origins = _dedupe_origins([*origins, _VPS_BROWSER_ORIGIN, _HTTPS_APP_ORIGIN, *_LOCAL_DEV_ORIGINS])
     return (origins, creds, regex)
 
 
@@ -107,6 +109,7 @@ async def get_user_by_email(email: str):
 app.include_router(card_auth.router, prefix="/card-auth", tags=["Auth"])
 app.include_router(card_management.router, prefix="/card-editor", tags=["Editor"])
 app.include_router(card_view.router, tags=["Public View"])
+app.include_router(contacts.router, tags=["Saved contacts"])
 
 # Handlers
 app.include_router(vcard_handler.router, prefix="/card-auth", tags=["vCard"])

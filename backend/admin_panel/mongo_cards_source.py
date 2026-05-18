@@ -50,8 +50,11 @@ def admin_row_from_visithon_doc(doc: dict) -> dict:
     email = str(doc.get("email") or (s6.get("email") or "")).strip()
     ca = doc.get("created_at")
     joined_at = ca.isoformat() if hasattr(ca, "isoformat") else str(ca or "")
+    mongo_user_id = str(doc.get("user_id") or "").strip()
     return {
         "_id": oid,
+        "user_id": mongo_user_id,
+        "card_id": oid,
         "user": {"name": name},
         "cardTitle": title,
         "company": company,
